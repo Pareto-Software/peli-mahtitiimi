@@ -145,8 +145,27 @@ class Areena extends Phaser.Scene {
     for (const t of Object.values(config.tiles)) {
       if (t.look !== 'wall' && t.look !== 'ice') emojiTexture(this, 'tile-' + t.look, t.look, TEX);
     }
-    circleTexture(this, 'pallo', config.snowball.radius, 0xffffff);
+    this.ballTexture();
     circleTexture(this, 'hiutale', 3, 0xffffff);
+  }
+
+  /** Lumipallo: valkoinen pallo, tumma reuna ja varjo, jotta se näkyy lumen päällä. */
+  ballTexture() {
+    if (this.textures.exists('pallo')) return;
+    const r = config.snowball.radius;
+    const edge = 2; // reunaviivan paksuus
+    const c = r + edge;
+    const g = this.make.graphics({ x: 0, y: 0 }, false);
+    g.fillStyle(0x1e3a5f, 1); // tumma reuna
+    g.fillCircle(c, c, r + edge);
+    g.fillStyle(0xffffff, 1); // valkoinen lumi
+    g.fillCircle(c, c, r);
+    g.fillStyle(0xb8d4ee, 1); // sininen varjo alareunassa
+    g.fillCircle(c + r * 0.25, c + r * 0.3, r * 0.55);
+    g.fillStyle(0xffffff, 1); // kiilto
+    g.fillCircle(c - r * 0.3, c - r * 0.3, r * 0.3);
+    g.generateTexture('pallo', c * 2, c * 2);
+    g.destroy();
   }
 
   tileAt(x: number, y: number): TileDef | null {
