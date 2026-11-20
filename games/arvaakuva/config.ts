@@ -54,5 +54,63 @@ export const config = {
     { emoji: '🌵', name: 'Kaktus' },
     { emoji: '🎸', name: 'Kitara' },
     { emoji: '🏰', name: 'Linna' },
+
+    // Ruoat
+    { emoji: '🍔', name: 'Hampurilainen' },
+    { emoji: '🍟', name: 'Ranskalaiset' },
+    { emoji: '🍦', name: 'Jäätelö' },
+    { emoji: '🧁', name: 'Kuppikakku' },
+    { emoji: '🍩', name: 'Donitsi' },
+    { emoji: '🥕', name: 'Porkkana' },
+    { emoji: '🍎', name: 'Omena' },
+    { emoji: '🧀', name: 'Juusto' },
+    { emoji: '🥞', name: 'Pannukakku' },
+    { emoji: '🌭', name: 'Hodari' },
+
+    // Eläimet
+    { emoji: '🐻', name: 'Karhu' },
+    { emoji: '🦊', name: 'Kettu' },
+    { emoji: '🐰', name: 'Pupu' },
+    { emoji: '🦉', name: 'Pöllö' },
+    { emoji: '🐢', name: 'Kilpikonna' },
+    { emoji: '🦈', name: 'Hai' },
+    { emoji: '🐝', name: 'Mehiläinen' },
+    { emoji: '🦄', name: 'Yksisarvinen' },
+    { emoji: '🐴', name: 'Hevonen' },
+    { emoji: '🐵', name: 'Apina' },
+
+    // Rakennukset
+    { emoji: '🏠', name: 'Talo' },
+    { emoji: '🏫', name: 'Koulu' },
+    { emoji: '🏥', name: 'Sairaala' },
+    { emoji: '⛪', name: 'Kirkko' },
+    { emoji: '🏟️', name: 'Stadion' },
+    { emoji: '🗼', name: 'Torni' },
+    { emoji: '⛺', name: 'Teltta' },
+    { emoji: '🏭', name: 'Tehdas' },
+
+    // Harrastusvälineet
+    { emoji: '🏀', name: 'Koripallo' },
+    { emoji: '🎾', name: 'Tennispallo' },
+    { emoji: '⛸️', name: 'Luistin' },
+    { emoji: '🎿', name: 'Sukset' },
+    { emoji: '🛹', name: 'Rullalauta' },
+    { emoji: '🏒', name: 'Jääkiekkomaila' },
+    { emoji: '🎨', name: 'Maalauspaletti' },
+    { emoji: '🥁', name: 'Rumpu' },
+    { emoji: '🎣', name: 'Onkivapa' },
+    { emoji: '🎮', name: 'Peliohjain' },
+
+    // Tavarat
+    { emoji: '☂️', name: 'Sateenvarjo' },
+    { emoji: '⏰', name: 'Herätyskello' },
+    { emoji: '🔑', name: 'Avain' },
+    { emoji: '✏️', name: 'Kynä' },
+    { emoji: '📚', name: 'Kirjat' },
+    { emoji: '🎒', name: 'Reppu' },
+    { emoji: '💡', name: 'Hehkulamppu' },
+    { emoji: '🧸', name: 'Nalle' },
+    { emoji: '🎁', name: 'Lahja' },
+    { emoji: '🔦', name: 'Taskulamppu' },
   ] as PictureDef[],
 };
