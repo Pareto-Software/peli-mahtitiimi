@@ -250,5 +250,23 @@ export const config = {
     { emoji: '⚓', name: 'Ankkuri' },
     { emoji: '🔔', name: 'Kello' },
     { emoji: '💎', name: 'Timantti' },
+
+    // Satu- ja seikkailuhahmot
+    { emoji: '🧙', name: 'Velho' },
+    { emoji: '🧚', name: 'Keiju' },
+    { emoji: '🧜', name: 'Merenneito' },
+    { emoji: '🧝', name: 'Haltija' },
+    { emoji: '🧞', name: 'Lampun henki' },
+    { emoji: '🦸', name: 'Supersankari' },
+    { emoji: '👸', name: 'Prinsessa' },
+    { emoji: '🤴', name: 'Prinssi' },
+    { emoji: '🤖', name: 'Robotti' },
+    { emoji: '👽', name: 'Avaruusolento' },
+    { emoji: '👻', name: 'Kummitus' },
+    { emoji: '🥷', name: 'Ninja' },
+    { emoji: '🧑‍🚀', name: 'Astronautti' },
+    { emoji: '🎅', name: 'Joulupukki' },
+    { emoji: '🧌', name: 'Peikko' },
+    { emoji: '🦹', name: 'Superkonna' },
   ] as PictureDef[],
 };
