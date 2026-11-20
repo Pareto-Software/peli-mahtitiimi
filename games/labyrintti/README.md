@@ -35,6 +35,7 @@ Everything in this game lives in four files; don't create new files.
 - `loadLevel` – reads a maze map, places players and things
 - `spawn(letter, col, row)` – adds a thing on a tile (e.g. from a timer)
 - `blocked(col, row)` – is this tile a wall (doors count until opened)
+- `readTaps` – phones: a tap turns player 1 towards it (`tapDir`); keys win over taps
 - `updatePlayer` + `cornerAssist` – free movement that slides around corners
 - `hurtPlayer` – back to the start, blinking for `config.safeTime`
 - `updateThing` – monsters walk tile to tile and choose a direction at each tile centre

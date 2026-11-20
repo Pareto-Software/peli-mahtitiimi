@@ -3,6 +3,7 @@
 
 import { startGame, hitStop } from '@kit/loop';
 import { input, type PlayerNumber } from '@kit/input';
+import { touch } from '@kit/touch';
 import { sfx } from '@kit/sound';
 import { drawEmoji } from '@kit/sprites';
 import { moveBody, overlap, distance, type TileWorld } from '@kit/physics';
@@ -89,6 +90,7 @@ function hasPower(p: Player, power: Power) {
 // ---------------------------------------------------------------------------
 
 function loadLevel(index: number) {
+  tapDir = { x: 0, y: 0 };
   levelIndex = index;
   const lines = levels[index].split('\n');
   while (lines.length && lines[0].trim() === '') lines.shift();
@@ -170,6 +172,7 @@ const allCollected = () => !things.some((t) => t.def.touch === 'collect');
 
 function hurtPlayer(p: Player) {
   if (p.safeTime > 0 || godMode || levelDoneTime > 0) return;
+  if (p.n === 1) tapDir = { x: 0, y: 0 }; // back to the start: stand still
   sfx('hit');
   fx.shake(8, 250);
   hitStop(80);
@@ -180,6 +183,27 @@ function hurtPlayer(p: Player) {
   }
   p.x = p.startX; p.y = p.startY;
   p.safeTime = config.safeTime;
+}
+
+// ---- Puhelin: napauta ruutua, niin pelaaja 1 lähtee sinne päin ----------------
+
+/** The direction player 1 walks after a tap (0, 0 = no tap). Keys win over taps. */
+let tapDir = { x: 0, y: 0 };
+
+/** Where the maze starts on the screen (the same as in draw). */
+function mazeOffset() {
+  return { ox: Math.round((W - cols * T) / 2), oy: TOP + Math.max(0, Math.round((H - TOP - rows * T) / 2)) };
+}
+
+/** A tap turns player 1 towards the tap: left, right, up or down. */
+function readTaps() {
+  const p = players[0];
+  const { ox, oy } = mazeOffset();
+  for (const tap of touch.taps()) {
+    const dx = tap.x - ox - (p.x + p.w / 2);
+    const dy = tap.y - oy - (p.y + p.h / 2);
+    tapDir = Math.abs(dx) > Math.abs(dy) ? { x: Math.sign(dx), y: 0 } : { x: 0, y: Math.sign(dy) };
+  }
 }
 
 function updatePlayer(p: Player, dt: number) {
@@ -196,6 +220,10 @@ function updatePlayer(p: Player, dt: number) {
   }
   const speed = playerDef(p).speed * T * (hasPower(p, 'fast') ? 1.7 : 1);
   let ix = inp.x, iy = inp.y;
+  if (p.n === 1) {
+    if (ix !== 0 || iy !== 0) tapDir = { x: 0, y: 0 }; // keys pressed: forget the tap
+    else { ix = tapDir.x; iy = tapDir.y; }
+  }
   const len = Math.hypot(ix, iy);
   if (len > 1) { ix /= len; iy /= len; }
   p.vx = ix * speed;
@@ -393,7 +421,7 @@ function update(dt: number) {
   if (input.keyPressed('KeyR', { shift: true })) { restartLevel(); return; }
 
   if (gameOver || gameWon) {
-    if (input.player(1).jumpPressed || input.player(2).jumpPressed) restartGame();
+    if (input.player(1).jumpPressed || input.player(2).jumpPressed || touch.taps().length > 0) restartGame();
     particles.update(dt);
     return;
   }
@@ -401,6 +429,7 @@ function update(dt: number) {
   levelTime += dt;
   if (config.timeLimit > 0 && levelTime > config.timeLimit && levelDoneTime === 0) { gameOver = true; sfx('lose'); }
 
+  readTaps();
   for (const p of players) updatePlayer(p, dt);
   for (const t of things) updateThing(t, dt);
   for (const p of players) {

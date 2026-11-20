@@ -2,6 +2,6 @@
   "title": "Juustolabyrintti",
   "emoji": "🐭",
   "description": "Kerää kaikki juustot ja juokse kotiin – varo ötököitä!",
-  "controls": "Pelaaja 1: W A S D · Pelaaja 2: nuolet",
+  "controls": "Pelaaja 1: W A S D tai napauta ruutua · Pelaaja 2: nuolet",
   "team": ""
 }
