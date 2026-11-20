@@ -47,6 +47,7 @@ let fixOrder: number[] = []; // palapeli: the order pieces go to their place
 let mixOrder: number[] = []; // palapeli: how the loose pieces are mixed
 let lineOrder: number[] = []; // viivat: the order lines appear
 let squareOrder: number[] = []; // palat: the order squares appear
+let dotOrder: number[] = []; // pisteet: the order dots appear
 let phaseAge = 0;
 let popups: Popup[] = [];
 let score = 0;
@@ -152,6 +153,7 @@ function nextPicture() {
   mixOrder = shuffle(range(config.puzzlePieces ** 2));
   lineOrder = shuffle(range(config.lines * 2));
   squareOrder = shuffle(range(config.smallPieces ** 2));
+  dotOrder = shuffle(range(config.dots ** 2));
   phase = 'peli';
   // The right answer + random wrong ones, in a random order.
   const others = shuffle(config.pictures.filter((p) => p !== pic)).slice(0, config.choices - 1);
@@ -362,12 +364,48 @@ function drawSquares(c: CanvasRenderingContext2D) {
   }
 }
 
+/** Pisteet: round dots appear one at a time in random places. */
+function drawDots(c: CanvasRenderingContext2D) {
+  const n = config.dots;
+  const step = SIZE / n;
+  const r = step * 0.75; // a bit bigger than the gap, so all dots together cover everything
+  c.fillStyle = '#2b2d42';
+  c.fillRect(LEFT, TOP, SIZE, SIZE);
+  c.save();
+  c.beginPath();
+  c.rect(LEFT, TOP, SIZE, SIZE);
+  c.clip();
+  c.beginPath();
+  for (const i of dotOrder.slice(0, partsShown(n * n))) {
+    const x = LEFT + ((i % n) + 0.5) * step, y = TOP + (Math.floor(i / n) + 0.5) * step;
+    c.moveTo(x + r, y);
+    c.arc(x, y, r, 0, Math.PI * 2);
+  }
+  c.clip(); // only the dots show the picture
+  c.fillStyle = 'rgba(255,255,255,0.85)';
+  c.fillRect(LEFT, TOP, SIZE, SIZE);
+  drawPart(c, 0, 0, SIZE, SIZE);
+  c.restore();
+}
+
+/** Reunat: the picture shows from the edges; the dark middle shrinks. */
+function drawEdges(c: CanvasRenderingContext2D) {
+  c.fillStyle = 'rgba(255,255,255,0.85)';
+  c.fillRect(LEFT, TOP, SIZE, SIZE);
+  drawPart(c, 0, 0, SIZE, SIZE);
+  const hidden = SIZE * (1 - (0.08 + 0.92 * revealed())); // a thin edge shows at the start
+  c.fillStyle = '#2b2d42';
+  c.fillRect(LEFT + (SIZE - hidden) / 2, TOP + (SIZE - hidden) / 2, hidden, hidden);
+}
+
 /** Draws the picture in this picture's reveal way. */
 function drawPicture(c: CanvasRenderingContext2D) {
   drawSharp();
   if (reveal === 'palapeli') drawPuzzle(c);
   else if (reveal === 'viivat') drawLines(c);
   else if (reveal === 'palat') drawSquares(c);
+  else if (reveal === 'pisteet') drawDots(c);
+  else if (reveal === 'reunat') drawEdges(c);
   else drawBlurry(c);
 }
 
