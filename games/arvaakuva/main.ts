@@ -204,7 +204,9 @@ function drawButtons(c: CanvasRenderingContext2D) {
     const color = right ? '#3ccf6e' : ch.wrong ? '#d94a4a' : 'rgba(255,255,255,0.9)';
     roundRect(c, r.x, r.y, r.w, r.h, 18, color);
     const textColor = right || ch.wrong ? '#fff' : '#223';
-    text(c, `${i + 1}. ${ch.pic.name}`, r.x + r.w / 2, r.y + r.h / 2, { size: 28, align: 'center', color: textColor });
+    const label = `${i + 1}. ${ch.pic.name}`;
+    const size = Math.min(28, (r.w - 16) / (label.length * 0.6)); // pitkä nimi = pienempi teksti
+    text(c, label, r.x + r.w / 2, r.y + r.h / 2, { size, align: 'center', color: textColor });
   });
 }
 
