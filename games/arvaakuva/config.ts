@@ -33,7 +33,7 @@ export const config = {
   /** Palapelin koko: näin monta palaa leveys- ja korkeussuunnassa. */
   puzzlePieces: 6,
   /** Viivoja vaaka- ja pystysuunnassa. */
-  lines: 12,
+  lines: 26,
   /** Pieniä paloja leveys- ja korkeussuunnassa. */
   smallPieces: 8,
   /** How many answer buttons. */
