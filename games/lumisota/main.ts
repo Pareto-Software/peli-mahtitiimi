@@ -576,14 +576,14 @@ class Areena extends Phaser.Scene {
     }
   }
 
+  /** Every won arena shows the trophy page (also the last one). */
   nextArena() {
-    if (levelIndex + 1 < levels.length) {
-      this.showTrophy();
-    } else {
-      this.finished = true;
-      const best = storage.highScore(score, 'lumisota-best');
-      this.banner('Voitit pelin! 🏆', `Pisteet: ${score} · Ennätys: ${best} · Paina heittoa`, 0);
-    }
+    this.showTrophy();
+  }
+
+  /** True when the arena just won was the last one. */
+  lastArena() {
+    return levelIndex + 1 >= levels.length;
   }
 
   // ---- Pokaalisivu: Jatka vai Lopeta? --------------------------------------------
@@ -612,10 +612,10 @@ class Areena extends Phaser.Scene {
     this.keepTrophy(this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.65).setDepth(depth));
     const style = { fontFamily: FONT, color: '#ffffff', stroke: '#000000', strokeThickness: 6 };
     this.keepTrophy(this.add.text(W / 2, 120, '🏆', { ...style, fontSize: '110px' }).setOrigin(0.5).setDepth(depth));
-    this.keepTrophy(this.add.text(W / 2, 235, `Areena ${levelIndex + 1} voitettu!`, { ...style, fontSize: '48px' }).setOrigin(0.5).setDepth(depth));
+    this.keepTrophy(this.add.text(W / 2, 235, this.lastArena() ? 'Voitit koko pelin!' : `Areena ${levelIndex + 1} voitettu!`, { ...style, fontSize: '48px' }).setOrigin(0.5).setDepth(depth));
     this.keepTrophy(this.add.text(W / 2, 295, `⭐ ${score} pistettä`, { ...style, fontSize: '30px', color: '#ffe9a8' }).setOrigin(0.5).setDepth(depth));
     this.trophyButtons = this.keepTrophy(this.add.graphics().setDepth(depth));
-    ['▶ Jatka', '⏹ Lopeta'].forEach((label, i) => {
+    [this.lastArena() ? '▶ Uusi peli' : '▶ Jatka', '⏹ Lopeta'].forEach((label, i) => {
       const r = this.trophyRect(i);
       this.keepTrophy(this.add.text(r.x + r.w / 2, r.y + r.h / 2, label, { ...style, fontSize: '36px' }).setOrigin(0.5).setDepth(depth + 1));
     });
@@ -655,9 +655,9 @@ class Areena extends Phaser.Scene {
       }
     }
     if (picked === 0) {
-      // Jatka: the next arena
-      levelIndex++;
-      this.scene.restart();
+      // Jatka: the next arena (after the last one: a new game from the start)
+      if (this.lastArena()) restartGame();
+      else { levelIndex++; this.scene.restart(); }
     } else if (picked === 1) {
       // Lopeta: the end screen; throw again = a new game from the start
       this.trophy = false;
