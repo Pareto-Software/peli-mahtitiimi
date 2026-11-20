@@ -31,7 +31,7 @@ export const config = {
    *  'viivat' = viiva kerrallaan, 'palat' = pieni pala kerrallaan. */
   reveals: ['sumea', 'palapeli', 'viivat', 'palat'] as RevealName[],
   /** Palapelin koko: näin monta palaa leveys- ja korkeussuunnassa. */
-  puzzlePieces: 4,
+  puzzlePieces: 6,
   /** Viivoja vaaka- ja pystysuunnassa. */
   lines: 12,
   /** Pieniä paloja leveys- ja korkeussuunnassa. */
