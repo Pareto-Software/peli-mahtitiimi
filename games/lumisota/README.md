@@ -27,6 +27,7 @@ Everything in this game lives in these files; don't create new files.
 | New walls, trees, ice | add a letter to `config.tiles` (`kind: 'wall'` or `'ice'`, `look`: `'wall'`, `'ice'` or an emoji), then use it in `levels.ts` |
 | Where snowmen come from | letter `S` in `levels.ts` |
 | Power-up | letter `*` in `levels.ts`; what it does: `config.powerUp` |
+| Random items (sukset, lumitykki, pipo, lumikasa) | `config.items`: how often (`every`), how many (`max`), each item's `emoji` and `seconds` |
 | Lives and game over | `config.lives` (0 = unlimited) |
 | Colours | `config.theme`: perus, talvi, avaruus, viidakko, laava, meri |
 | Sounds | `sfx('name')` from `@kit/sound`; names: jump coin hit powerup win lose boom click shoot bounce roar fart |
@@ -42,6 +43,7 @@ Everything in this game lives in these files; don't create new files.
 - `ballHitsPlayer` / `ballHitsEnemy` / `hurtPlayer` / `push` – hits, knock-back, melting
 - `updateWaves` – waves, the boss, arena won → `nextArena`
 - `showTrophy` / `updateTrophy` – the trophy page between arenas: ▶ Jatka (next arena) or ⏹ Lopeta (end screen)
+- `updateItems` / `takeItem` / `buildSnowWall` – random items; a lumikasa makes a melting snow wall (`snowWalls`: blocks walking, not snowballs)
 - `spawnEnemy` / `updateEnemy` – snowmen walk towards the nearest player and around walls
 - `drawHud` / `banner` – score line, boss health bar, big messages
 - `restartGame` / `restartLevel` – used by the ⚙️ menu

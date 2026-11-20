@@ -21,6 +21,9 @@ const theme = themes[config.theme] ?? themes.talvi;
 const FONT = '"Arial Rounded MT Bold", "Avenir Next", system-ui, sans-serif';
 const HUD = 1000; // depth of the score line and banners
 const color = (hex: string) => parseInt(hex.replace('#', ''), 16);
+/** The random items (config.items). */
+const ITEM_KINDS = ['sukset', 'tykki', 'pipo', 'lumikasa'] as const;
+type ItemKind = (typeof ITEM_KINDS)[number];
 
 // ---------------------------------------------------------------------------
 // State that survives a restart of the arena
@@ -101,6 +104,9 @@ interface Player {
   reload: number;
   powerTime: number;
   safeTime: number;
+  skiTime: number; // 🎿 sukset: faster
+  cannonTime: number; // 🌨️ lumitykki: many directions
+  hatTime: number; // 🧢 pipo: hits don't hurt
   startX: number;
   startY: number;
 }
@@ -127,6 +133,9 @@ class Areena extends Phaser.Scene {
   walls!: Phaser.Physics.Arcade.StaticGroup;
   balls!: Phaser.Physics.Arcade.Group;
   powerUps!: Phaser.Physics.Arcade.StaticGroup;
+  items!: Phaser.Physics.Arcade.StaticGroup; // random things to pick up
+  snowWalls!: Phaser.Physics.Arcade.StaticGroup; // walls made from a lumikasa
+  itemTimer = 0;
   spawnPoints: { x: number; y: number }[] = [];
   map: string[] = [];
   top = 0; // y of the arena's top edge
@@ -180,6 +189,9 @@ class Areena extends Phaser.Scene {
     this.makeTextures();
     this.walls = this.physics.add.staticGroup();
     this.powerUps = this.physics.add.staticGroup();
+    this.items = this.physics.add.staticGroup();
+    this.snowWalls = this.physics.add.staticGroup();
+    this.itemTimer = config.items.every;
     this.balls = this.physics.add.group();
     this.buildArena();
 
@@ -213,6 +225,7 @@ class Areena extends Phaser.Scene {
     emojiTexture(this, 'enemy-' + config.enemy.emoji, config.enemy.emoji, TEX);
     if (config.boss) emojiTexture(this, 'boss-' + config.boss.emoji, config.boss.emoji, TEX);
     emojiTexture(this, 'power-' + config.powerUp.emoji, config.powerUp.emoji, TEX);
+    for (const kind of ITEM_KINDS) emojiTexture(this, 'item-' + kind, config.items[kind].emoji, TEX);
     for (const t of Object.values(config.tiles)) {
       if (t.look !== 'wall' && t.look !== 'ice') emojiTexture(this, 'tile-' + t.look, t.look, TEX);
     }
@@ -304,7 +317,7 @@ class Areena extends Phaser.Scene {
     sprite.setCollideWorldBounds(true);
     const p: Player = {
       n, def, sprite, active: n === 1, aimX: n === 1 ? 1 : -1, aimY: 0,
-      reload: 0, powerTime: 0, safeTime: 0, startX: x, startY: y,
+      reload: 0, powerTime: 0, safeTime: 0, skiTime: 0, cannonTime: 0, hatTime: 0, startX: x, startY: y,
     };
     sprite.setFlipX(p.aimX < 0);
     // Player 2 joins by pressing a key; in 'vastakkain' they are there from the start.
@@ -322,6 +335,8 @@ class Areena extends Phaser.Scene {
     for (const p of this.players) {
       this.physics.add.collider(p.sprite, this.walls);
       this.physics.add.overlap(p.sprite, this.powerUps, (_a, pu) => this.takePowerUp(p, pu as Phaser.Physics.Arcade.Sprite));
+      this.physics.add.overlap(p.sprite, this.items, (_a, it) => this.takeItem(p, it as Phaser.Physics.Arcade.Sprite));
+      this.physics.add.collider(p.sprite, this.snowWalls); // snowballs fly over, feet don't
       this.physics.add.overlap(p.sprite, this.balls, (_a, b) => this.ballHitsPlayer(p, b as Sprite));
     }
     if (this.mode === 'vastakkain') this.physics.add.collider(this.players[0].sprite, this.players[1].sprite);
@@ -368,6 +383,7 @@ class Areena extends Phaser.Scene {
     }
 
     for (const p of this.players) this.updatePlayer(p, dt);
+    if (this.arenaDone <= 0) this.updateItems(dt);
     for (const e of this.enemies) this.updateEnemy(e, dt);
     this.enemies = this.enemies.filter((e) => e.sprite.active);
     this.updateBalls(dt);
@@ -421,7 +437,7 @@ class Areena extends Phaser.Scene {
     let ix = inp.x, iy = inp.y;
     const len = Math.hypot(ix, iy);
     if (len > 1) { ix /= len; iy /= len; }
-    const speed = p.def.speed * T;
+    const speed = p.def.speed * T * (p.skiTime > 0 ? config.items.sukset.speed : 1);
     const onIce = this.tileAt(p.sprite.x, p.sprite.y)?.kind === 'ice';
     const step = (onIce ? 5 : 50) * T * dt;
     body.setVelocity(
@@ -440,16 +456,32 @@ class Areena extends Phaser.Scene {
     // Throwing snowballs
     p.reload -= dt;
     p.powerTime -= dt;
+    p.skiTime -= dt;
+    p.cannonTime -= dt;
+    p.hatTime -= dt;
     const fast = p.powerTime > 0;
     if ((inp.actionPressed || (fast && inp.action)) && p.reload <= 0) {
       p.reload = fast ? config.powerUp.reload : config.snowball.reload;
-      this.throwBall(p.sprite.x, p.sprite.y, p.aimX, p.aimY, p.n);
+      if (p.cannonTime > 0) {
+        // Lumitykki: snowballs in every direction around the player
+        const n = config.items.tykki.directions;
+        const start = Math.atan2(p.aimY, p.aimX);
+        for (let i = 0; i < n; i++) {
+          const a = start + (i * Math.PI * 2) / n;
+          this.throwBall(p.sprite.x, p.sprite.y, Math.cos(a), Math.sin(a), p.n);
+        }
+      } else {
+        this.throwBall(p.sprite.x, p.sprite.y, p.aimX, p.aimY, p.n);
+      }
       this.squash(p.sprite);
     }
 
     // Blinking while safe after a hit
     p.safeTime = Math.max(0, p.safeTime - dt);
     p.sprite.setAlpha(p.safeTime > 0 && Math.floor(p.safeTime * 12) % 2 === 0 ? 0.3 : 1);
+    // Pipo on: a light blue glow
+    if (p.hatTime > 0) p.sprite.setTint(0x9fdcff);
+    else p.sprite.clearTint();
   }
 
   /** Throw a snowball from (x, y) towards (dx, dy). owner: 1 or 2 = a player, 0 = an enemy. */
@@ -501,6 +533,68 @@ class Areena extends Phaser.Scene {
     }
   }
 
+  // ---- Random items: sukset, lumitykki, pipo, lumikasa -------------------------
+
+  /** Now and then a random item appears on a free floor tile. */
+  updateItems(dt: number) {
+    this.itemTimer -= dt;
+    if (this.itemTimer > 0) return;
+    this.itemTimer = config.items.every;
+    if (this.items.countActive() >= config.items.max) return;
+    const kind = ITEM_KINDS[Math.floor(Math.random() * ITEM_KINDS.length)];
+    for (let tries = 0; tries < 30; tries++) {
+      const r = Phaser.Math.Between(0, this.map.length - 1);
+      const c = Phaser.Math.Between(0, (this.map[r]?.length ?? 1) - 1);
+      const ch = this.map[r]?.[c] ?? '#';
+      if (ch !== ' ' && ch !== '.') continue; // only on empty floor
+      const x = c * T + T / 2, y = this.top + r * T + T / 2;
+      if (this.players.some((p) => p.active && Phaser.Math.Distance.Between(p.sprite.x, p.sprite.y, x, y) < T * 2)) continue;
+      const it = this.items.create(x, y, 'item-' + kind) as Phaser.Physics.Arcade.Sprite;
+      it.setDisplaySize(T, T).refreshBody().setDepth(y).setData('kind', kind);
+      this.tweens.add({ targets: it, scale: it.scale * 1.15, yoyo: true, repeat: -1, duration: 450, ease: 'Sine.inOut' });
+      // Not picked up in time: it fades away
+      this.time.delayedCall(config.items.stay * 1000, () => {
+        if (it.active) this.tweens.add({ targets: it, alpha: 0, duration: 400, onComplete: () => it.destroy() });
+      });
+      sfx('click');
+      return;
+    }
+  }
+
+  takeItem(p: Player, it: Phaser.Physics.Arcade.Sprite) {
+    if (!it.active || !p.active) return;
+    const kind = it.getData('kind') as ItemKind;
+    it.destroy();
+    this.puff.explode(16, it.x, it.y);
+    sfx('powerup');
+    const def = config.items[kind];
+    if (kind === 'sukset') { p.skiTime = def.seconds; this.banner('🎿 Sukset!', 'Nopeampi vauhti', 1200); }
+    if (kind === 'tykki') { p.cannonTime = def.seconds; this.banner('🌨️ Lumitykki!', 'Pallot lentävät joka suuntaan', 1200); }
+    if (kind === 'pipo') { p.hatTime = def.seconds; this.banner('🧢 Pipo!', 'Osumat eivät satu', 1200); }
+    if (kind === 'lumikasa') { this.buildSnowWall(p); this.banner('🏔️ Lumiseinä!', 'Heitä sen yli', 1200); }
+  }
+
+  /** A short snow wall in front of the player, across the way they look. Melts after a while. */
+  buildSnowWall(p: Player) {
+    const alongX = Math.abs(p.aimX) >= Math.abs(p.aimY); // looking left/right → the wall goes up/down
+    const dx = alongX ? Math.sign(p.aimX) || 1 : 0;
+    const dy = alongX ? 0 : Math.sign(p.aimY) || 1;
+    const cx = p.sprite.x + dx * T * 1.5, cy = p.sprite.y + dy * T * 1.5;
+    const n = config.items.lumikasa.length;
+    for (let i = 0; i < n; i++) {
+      const k = i - (n - 1) / 2;
+      const x = cx + (alongX ? 0 : k * T), y = cy + (alongX ? k * T : 0);
+      if (y < this.top || x < 0 || x > W || this.tileAt(x, y)?.kind === 'wall') continue;
+      const block = this.add.rectangle(x, y, T, T, 0xf4fbff).setStrokeStyle(3, 0xbfe6ff).setDepth(y);
+      this.snowWalls.add(block);
+      // Melts: fades away and is gone
+      this.time.delayedCall(config.items.lumikasa.seconds * 1000, () => {
+        this.tweens.add({ targets: block, alpha: 0, duration: 500, onComplete: () => block.destroy() });
+      });
+    }
+    sfx('bounce');
+  }
+
   takePowerUp(p: Player, pu: Phaser.Physics.Arcade.Sprite) {
     if (!pu.active || !p.active) return;
     pu.destroy();
@@ -513,6 +607,7 @@ class Areena extends Phaser.Scene {
   /** A snowman or an icy snowball got the player. (fromX, fromY) is where it came from. */
   hurtPlayer(p: Player, fromX: number, fromY: number) {
     if (p.safeTime > 0 || godMode || this.arenaDone > 0) return;
+    if (p.hatTime > 0) { this.puff.explode(6, p.sprite.x, p.sprite.y); return; } // 🧢 pipo: no harm
     sfx('hit');
     this.cameras.main.shake(200, 0.01);
     this.puff.explode(14, p.sprite.x, p.sprite.y);
@@ -684,6 +779,7 @@ class Areena extends Phaser.Scene {
       throwTimer: def.throwsEvery, hitTime: 0,
     };
     this.physics.add.collider(s, this.walls);
+    this.physics.add.collider(s, this.snowWalls);
     this.physics.add.overlap(s, this.balls, (_a, b) => this.ballHitsEnemy(e, b as Sprite));
     for (const p of this.players) this.physics.add.overlap(p.sprite, s, () => this.hurtPlayer(p, s.x, s.y));
     const bx = s.getData('baseScaleX'), by = s.getData('baseScaleY');

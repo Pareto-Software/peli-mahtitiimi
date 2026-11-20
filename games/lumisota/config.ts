@@ -86,6 +86,24 @@ export const config = {
   /** Power-up (letter * in the map): seconds of super-fast throwing. */
   powerUp: { emoji: '🧤', seconds: 8, reload: 0.08 },
 
+  /** Tavarat, joita ilmestyy satunnaisesti kentälle. Poimi kävelemällä päälle. */
+  items: {
+    /** Sekunteja uuden tavaran ilmestymiseen. */
+    every: 6,
+    /** Enintään näin monta tavaraa kentällä yhtä aikaa. */
+    max: 2,
+    /** Sekunteja, ennen kuin poimimaton tavara katoaa. */
+    stay: 12,
+    /** Sukset: kävelet nopeammin. */
+    sukset: { emoji: '🎿', seconds: 8, speed: 1.7 },
+    /** Lumitykki: jokainen heitto lentää moneen suuntaan. */
+    tykki: { emoji: '🌨️', seconds: 8, directions: 8 },
+    /** Pipo: osumat eivät satu. */
+    pipo: { emoji: '🧢', seconds: 8 },
+    /** Lumikasa: eteesi tulee lumiseinä. Sen yli voi heittää, mutta ei kävellä. */
+    lumikasa: { emoji: '🏔️', seconds: 7, length: 3 },
+  },
+
   /** Map letters for walls and floors (levels.ts). */
   tiles: {
     '#': { kind: 'wall', look: 'wall' },
