@@ -13,11 +13,13 @@ import { themes } from '@kit/themes';
 import { storage } from '@kit/storage';
 import { config, type PictureDef, type RevealName } from './config';
 
-const W = 960;
-const H = 540;
+// Puhelin pystyssä = peli pystyssä (napit kahteen riviin, kuva isompi).
+const PORTRAIT = innerHeight > innerWidth;
+const W = PORTRAIT ? 540 : 960;
+const H = PORTRAIT ? 960 : 540;
 const theme = themes[config.theme];
-const SIZE = config.size;
-const PIC_Y = 200; // where the middle of the picture is
+const SIZE = PORTRAIT ? 420 : config.size;
+const PIC_Y = PORTRAIT ? 330 : 200; // where the middle of the picture is
 const LEFT = W / 2 - SIZE / 2; // top-left corner of the picture
 const TOP = PIC_Y - SIZE / 2;
 
@@ -95,11 +97,14 @@ function toStart() {
   newNicks();
 }
 
-/** Where nickname button i is: two rows of three. */
+/** Where nickname button i is: two rows of three (phone upright: three rows of two). */
 function nickRect(i: number) {
   const gap = 16;
-  const w = (W - 32 - gap * 2) / 3;
-  return { x: 16 + (i % 3) * (w + gap), y: 200 + Math.floor(i / 3) * 110, w, h: 90 };
+  const cols = PORTRAIT ? 2 : 3;
+  const w = (W - 32 - gap * (cols - 1)) / cols;
+  const top = PORTRAIT ? 260 : 200;
+  const h = PORTRAIT ? 110 : 90;
+  return { x: 16 + (i % cols) * (w + gap), y: top + Math.floor(i / cols) * (h + 20), w, h };
 }
 
 function nickAt(tap: Tap) {
@@ -176,9 +181,13 @@ function pointsNow() {
 
 // ---- Answer buttons -----------------------------------------------------------
 
-/** Where button i is: a row at the bottom of the screen. */
+/** Where button i is: a row at the bottom of the screen (phone upright: two per row). */
 function buttonRect(i: number) {
   const gap = 16;
+  if (PORTRAIT) {
+    const w = (W - 32 - gap) / 2;
+    return { x: 16 + (i % 2) * (w + gap), y: 600 + Math.floor(i / 2) * 130, w, h: 110 };
+  }
   const w = (W - 32 - gap * (choices.length - 1)) / choices.length;
   return { x: 16 + i * (w + gap), y: 400, w, h: 90 };
 }
@@ -377,8 +386,8 @@ function drawButtons(c: CanvasRenderingContext2D) {
 
 /** The start screen: pick your nickname. */
 function drawNickPicker(c: CanvasRenderingContext2D) {
-  text(c, config.title, W / 2, 95, { size: 56, align: 'center' });
-  text(c, 'Valitse lempinimesi – sitten arvataan kuvia!', W / 2, 155, { size: 24, align: 'center', color: '#ffe9a8' });
+  text(c, config.title, W / 2, PORTRAIT ? 140 : 95, { size: 56, align: 'center' });
+  text(c, 'Valitse lempinimesi – sitten arvataan kuvia!', W / 2, PORTRAIT ? 205 : 155, { size: PORTRAIT ? 20 : 24, align: 'center', color: '#ffe9a8' });
   nickChoices.forEach((n, i) => {
     const r = nickRect(i);
     roundRect(c, r.x, r.y, r.w, r.h, 18, 'rgba(255,255,255,0.9)');
@@ -391,18 +400,20 @@ function drawNickPicker(c: CanvasRenderingContext2D) {
 /** The end screen: the score table, this round's line in yellow. */
 function drawScoreTable(c: CanvasRenderingContext2D) {
   c.fillStyle = 'rgba(0,0,0,0.5)';
-  c.fillRect(W / 2 - 300, 60, 600, 440);
-  text(c, newRecord ? `Uusi ennätys! ⭐ ${score}` : `Valmis! ⭐ ${score}`, W / 2, 95, { size: 36, align: 'center' });
-  text(c, '🏆 Pistetaulukko', W / 2, 140, { size: 24, align: 'center', color: '#ffe9a8' });
+  const top = PORTRAIT ? 200 : 0; // phone upright: table lower down
+  const half = Math.min(300, W / 2 - 10); // half the panel width
+  c.fillRect(W / 2 - half, top + 60, half * 2, 440);
+  text(c, newRecord ? `Uusi ennätys! ⭐ ${score}` : `Valmis! ⭐ ${score}`, W / 2, top + 95, { size: 36, align: 'center' });
+  text(c, '🏆 Pistetaulukko', W / 2, top + 140, { size: 24, align: 'center', color: '#ffe9a8' });
   scoreTable.forEach((line, i) => {
-    const y = 180 + i * 30;
+    const y = top + 180 + i * 30;
     const color = i === myLine ? '#ffd93d' : '#fff';
-    text(c, `${i + 1}.`, W / 2 - 250, y, { size: 22, color });
-    text(c, line.nick, W / 2 - 200, y, { size: 22, color });
-    text(c, `${line.score}`, W / 2 + 250, y, { size: 22, align: 'right', color });
+    text(c, `${i + 1}.`, W / 2 - half + 40, y, { size: 22, color });
+    text(c, line.nick, W / 2 - half + 90, y, { size: 22, color });
+    text(c, `${line.score}`, W / 2 + half - 40, y, { size: 22, align: 'right', color });
   });
-  if (myLine < 0) text(c, `${nick}: ${score} – ei mahtunut taulukkoon`, W / 2, 485, { size: 18, align: 'center', color: '#ffd93d' });
-  if (phaseAge > 1.2) text(c, 'Napauta niin uusi kierros', W / 2, 525, { size: 20, align: 'center', color: '#ffe9a8' });
+  if (myLine < 0) text(c, `${nick}: ${score} – ei mahtunut taulukkoon`, W / 2, top + 485, { size: 18, align: 'center', color: '#ffd93d' });
+  if (phaseAge > 1.2) text(c, 'Napauta niin uusi kierros', W / 2, top + 525, { size: 20, align: 'center', color: '#ffe9a8' });
 }
 
 function draw(c: CanvasRenderingContext2D) {
