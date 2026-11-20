@@ -428,7 +428,7 @@ function buttonText(c: CanvasRenderingContext2D, label: string, r: { x: number; 
   };
   // One line, if it fits big enough
   let size = 30;
-  while (size > 18 && widthAt(label, size) > r.w - 20) size--;
+  while (size > 24 && widthAt(label, size) > r.w - 20) size--; // pieni teksti näyttää puhelimella sumealta
   if (widthAt(label, size) <= r.w - 20) {
     text(c, label, r.x + r.w / 2, r.y + r.h / 2, { size, align: 'center', color, outline: light });
     return;
@@ -437,8 +437,8 @@ function buttonText(c: CanvasRenderingContext2D, label: string, r: { x: number; 
   const spaces = [...label.matchAll(/ /g)].map((s) => s.index!);
   const cut = spaces.reduce((a, b) => (Math.abs(b - label.length / 2) < Math.abs(a - label.length / 2) ? b : a), spaces[0] ?? label.length);
   const lines = [label.slice(0, cut), label.slice(cut + 1)];
-  size = 26;
-  while (size > 12 && Math.max(...lines.map((l) => widthAt(l, size))) > r.w - 20) size--;
+  size = 30;
+  while (size > 18 && Math.max(...lines.map((l) => widthAt(l, size))) > r.w - 20) size--;
   lines.forEach((l, k) => {
     text(c, l, r.x + r.w / 2, r.y + r.h / 2 + (k - 0.5) * size * 1.15, { size, align: 'center', color, outline: light });
   });
