@@ -24,9 +24,14 @@ Everything in this game lives in these files; don't create new files.
 | More / fewer pictures per round | `config.picturesPerRound` |
 | More answer buttons | `config.choices` (max 6 for number keys) |
 | Points | `config.maxPoints`, `config.minPoints`, `config.wrongPenalty` |
+| Nicknames (picked on the start screen, never typed) | `config.nickWords`, `config.nickAnimals` |
+| Longer / shorter score table | `config.scoreTableSize` |
 | Colours | `config.theme`: perus, talvi, avaruus, viidakko, laava, meri |
 
 ## main.ts
+
+- `newNicks` / `drawNickPicker` – the start screen: pick one of 6 made-up nicknames (tap or 1–6)
+- `saveToTable` / `drawScoreTable` – the score table (saved with `storage` key `taulukko`), shown at the end
 
 - `startRound` / `nextPicture` / `endRound` – the round, a new picture with shuffled answers, the end and high score
 - `sharpness` / `pointsNow` – how sharp the picture is and what a right answer is worth now

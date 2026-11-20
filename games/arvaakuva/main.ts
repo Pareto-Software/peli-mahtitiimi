@@ -51,6 +51,13 @@ let score = 0;
 let best = storage.load('best', 0);
 let newRecord = false;
 
+/** One line in the score table: the nickname and the points. */
+interface ScoreLine { nick: string; score: number }
+let scoreTable: ScoreLine[] = storage.load('taulukko', []);
+let myLine = -1; // this round's line in the table (shown yellow), -1 = didn't fit
+let nick = ''; // the nickname picked for this round
+let nickChoices: string[] = [];
+
 // Small canvas: the picture is drawn tiny and stretched big = blurry!
 const blurCanvas = document.createElement('canvas');
 const blurCtx = blurCanvas.getContext('2d')!;
@@ -67,6 +74,47 @@ function shuffle<T>(list: T[]): T[] {
     [a[i], a[j]] = [a[j], a[i]];
   }
   return a;
+}
+
+// ---- Nicknames and the score table --------------------------------------------
+
+const NICK_COUNT = 6;
+
+/** New random nicknames to pick from, e.g. "Nopea 🦊 Kettu". */
+function newNicks() {
+  const words = shuffle(config.nickWords);
+  const animals = shuffle(config.nickAnimals);
+  nickChoices = [...Array(NICK_COUNT).keys()].map((i) => `${words[i % words.length]} ${animals[i % animals.length]}`);
+}
+newNicks();
+
+/** Back to picking a nickname (also "Aloita alusta" in the ⚙️ menu). */
+function toStart() {
+  phase = 'alku';
+  phaseAge = 0;
+  newNicks();
+}
+
+/** Where nickname button i is: two rows of three. */
+function nickRect(i: number) {
+  const gap = 16;
+  const w = (W - 32 - gap * 2) / 3;
+  return { x: 16 + (i % 3) * (w + gap), y: 200 + Math.floor(i / 3) * 110, w, h: 90 };
+}
+
+function nickAt(tap: Tap) {
+  return nickChoices.findIndex((_, i) => {
+    const r = nickRect(i);
+    return tap.x >= r.x && tap.x <= r.x + r.w && tap.y >= r.y && tap.y <= r.y + r.h;
+  });
+}
+
+/** Puts this round's points into the score table (best first). */
+function saveToTable() {
+  const line = { nick, score };
+  scoreTable = [...scoreTable, line].sort((a, b) => b.score - a.score).slice(0, config.scoreTableSize);
+  myLine = scoreTable.indexOf(line);
+  storage.save('taulukko', scoreTable);
 }
 
 // ---- Round ------------------------------------------------------------------
@@ -110,6 +158,7 @@ function endRound() {
   phaseAge = 0;
   newRecord = score > best;
   best = storage.highScore(score);
+  saveToTable();
   sfx('win');
   if (newRecord) particles.confetti(W / 2, H / 2);
 }
@@ -179,8 +228,17 @@ function update(dt: number) {
   popups = popups.filter((p) => p.age < 0.8);
   phaseAge += dt;
 
-  if (phase === 'alku' || (phase === 'loppu' && phaseAge > 1.2)) {
-    if (wantsToStart(taps)) startRound();
+  if (phase === 'alku') {
+    // Pick a nickname: tap it or press 1–6.
+    let picked = -1;
+    for (const tap of taps) if (nickAt(tap) >= 0) picked = nickAt(tap);
+    NUMBER_KEYS.forEach((key, i) => { if (input.keyPressed(key)) picked = i; });
+    if (input.keyPressed('Space') || input.keyPressed('Enter')) picked = 0;
+    if (picked >= 0) { nick = nickChoices[picked]; startRound(); }
+    return;
+  }
+  if (phase === 'loppu') {
+    if (phaseAge > 1.2 && wantsToStart(taps)) toStart();
     return;
   }
   if (phase === 'oikein') {
@@ -317,6 +375,36 @@ function drawButtons(c: CanvasRenderingContext2D) {
   });
 }
 
+/** The start screen: pick your nickname. */
+function drawNickPicker(c: CanvasRenderingContext2D) {
+  text(c, config.title, W / 2, 95, { size: 56, align: 'center' });
+  text(c, 'Valitse lempinimesi – sitten arvataan kuvia!', W / 2, 155, { size: 24, align: 'center', color: '#ffe9a8' });
+  nickChoices.forEach((n, i) => {
+    const r = nickRect(i);
+    roundRect(c, r.x, r.y, r.w, r.h, 18, 'rgba(255,255,255,0.9)');
+    const label = `${i + 1}. ${n}`;
+    const size = Math.min(26, (r.w - 16) / (label.length * 0.6));
+    text(c, label, r.x + r.w / 2, r.y + r.h / 2, { size, align: 'center', color: '#223' });
+  });
+}
+
+/** The end screen: the score table, this round's line in yellow. */
+function drawScoreTable(c: CanvasRenderingContext2D) {
+  c.fillStyle = 'rgba(0,0,0,0.5)';
+  c.fillRect(W / 2 - 300, 60, 600, 440);
+  text(c, newRecord ? `Uusi ennätys! ⭐ ${score}` : `Valmis! ⭐ ${score}`, W / 2, 95, { size: 36, align: 'center' });
+  text(c, '🏆 Pistetaulukko', W / 2, 140, { size: 24, align: 'center', color: '#ffe9a8' });
+  scoreTable.forEach((line, i) => {
+    const y = 180 + i * 30;
+    const color = i === myLine ? '#ffd93d' : '#fff';
+    text(c, `${i + 1}.`, W / 2 - 250, y, { size: 22, color });
+    text(c, line.nick, W / 2 - 200, y, { size: 22, color });
+    text(c, `${line.score}`, W / 2 + 250, y, { size: 22, align: 'right', color });
+  });
+  if (myLine < 0) text(c, `${nick}: ${score} – ei mahtunut taulukkoon`, W / 2, 485, { size: 18, align: 'center', color: '#ffd93d' });
+  if (phaseAge > 1.2) text(c, 'Napauta niin uusi kierros', W / 2, 525, { size: 20, align: 'center', color: '#ffe9a8' });
+}
+
 function draw(c: CanvasRenderingContext2D) {
   const sky = c.createLinearGradient(0, 0, 0, H);
   sky.addColorStop(0, theme.skyTop);
@@ -343,13 +431,8 @@ function draw(c: CanvasRenderingContext2D) {
     extra: phase === 'peli' ? `💰 ${pointsNow()}` : `🏆 ${best}`,
   });
 
-  if (phase === 'alku') {
-    banner(c, W, H, config.title, 'Arvaa sumea kuva – mitä nopeammin, sitä enemmän pisteitä! Napauta aloittaaksesi');
-  }
-  if (phase === 'loppu') {
-    const sub = newRecord ? 'Uusi ennätys! 🏆' : `Ennätys ${best}`;
-    banner(c, W, H, `Valmis! ⭐ ${score}`, phaseAge > 1.2 ? `${sub} · napauta niin uusi kierros` : sub);
-  }
+  if (phase === 'alku') drawNickPicker(c);
+  if (phase === 'loppu') drawScoreTable(c);
 }
 
 startGame({
@@ -357,7 +440,7 @@ startGame({
   height: H,
   update,
   draw,
-  restartGame: startRound,
-  restartLevel: startRound,
+  restartGame: toStart,
+  restartLevel: toStart,
   players: 1,
 });

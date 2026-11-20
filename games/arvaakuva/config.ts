@@ -45,6 +45,12 @@ export const config = {
   /** A wrong answer takes this many points away from the picture. */
   wrongPenalty: 20,
 
+  /** Pistetaulukossa näkyy näin monta parasta tulosta. */
+  scoreTableSize: 10,
+  /** Lempinimet kootaan näistä: sana + eläin, esim. "Nopea 🦊 Kettu". */
+  nickWords: ['Nopea', 'Ovela', 'Iloinen', 'Rohkea', 'Salainen', 'Hurja', 'Pörröinen', 'Tarkka', 'Supersankari', 'Unelias', 'Hassu', 'Kultainen'],
+  nickAnimals: ['🦊 Kettu', '🐼 Panda', '🦉 Pöllö', '🐸 Sammakko', '🦄 Yksisarvinen', '🐯 Tiikeri', '🐧 Pingviini', '🦖 Dino', '🐙 Mustekala', '🦔 Siili', '🐝 Mehiläinen', '🐉 Lohikäärme'],
+
   /** Kuvat, joita arvataan. Lisää uusia: emoji + nimi. */
   pictures: [
     { emoji: '🐱', name: 'Kissa' },
