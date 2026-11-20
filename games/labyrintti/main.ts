@@ -559,3 +559,21 @@ function drawHud(ctx: CanvasRenderingContext2D) {
 
 loadLevel(levelIndex);
 startGame({ width: W, height: H, update, draw, restartGame, restartLevel, players: config.players });
+
+// Puhelin: peli mahtuu koko ruutuun myös vaakatasossa (osoitepalkki ei peitä
+// reunoja), eikä ruutua voi vahingossa zoomata napauttamalla.
+function fitPhoneScreen() {
+  const vw = visualViewport?.width ?? innerWidth;
+  const vh = visualViewport?.height ?? innerHeight;
+  document.documentElement.style.touchAction = 'none';
+  document.body.style.touchAction = 'none';
+  document.body.style.height = `${vh}px`;
+  const canvas = document.querySelector('canvas');
+  if (!canvas) return;
+  const s = Math.min(vw / W, vh / H);
+  canvas.style.width = `${Math.floor(W * s)}px`;
+  canvas.style.height = `${Math.floor(H * s)}px`;
+}
+fitPhoneScreen();
+addEventListener('resize', fitPhoneScreen);
+visualViewport?.addEventListener('resize', fitPhoneScreen);
