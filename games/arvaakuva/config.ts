@@ -18,7 +18,7 @@ export const config = {
   /** How many pictures in one round. */
   picturesPerRound: 10,
   /** Seconds it takes for a picture to become totally sharp. */
-  sharpenSeconds: 8,
+  sharpenSeconds: 14,
   /** How blurry it is at the start: smaller = blurrier (pixels across the picture). */
   startSharpness: 3,
   /** Size of the picture in pixels (the screen is 960 × 540). */
