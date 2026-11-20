@@ -43,6 +43,7 @@ let picNumber = 0;
 let picAge = 0; // seconds since this picture appeared
 let penalty = 0; // points lost to wrong answers on this picture
 let reveal: RevealName = 'sumea'; // how this picture is revealed
+let revealBag: RevealName[] = []; // reveal ways still to come before they all repeat
 let fixOrder: number[] = []; // palapeli: the order pieces go to their place
 let mixOrder: number[] = []; // palapeli: how the loose pieces are mixed
 let lineOrder: number[] = []; // viivat: the order lines appear
@@ -145,9 +146,12 @@ function nextPicture() {
   picAge = 0;
   penalty = 0;
   // Pick a random reveal way and random orders for it.
-  // Ei samaa tapaa kahdesti peräkkäin (jos tapoja on enemmän kuin yksi).
-  const ways = config.reveals.length > 1 ? config.reveals.filter((r) => r !== reveal) : config.reveals;
-  reveal = ways[Math.floor(Math.random() * ways.length)] ?? 'sumea';
+  // Kaikki tavat tulevat vuorollaan sekaisin järjestyksessä, ei samaa kahdesti peräkkäin.
+  if (revealBag.length === 0) {
+    revealBag = shuffle(config.reveals);
+    if (revealBag.length > 1 && revealBag[0] === reveal) revealBag.push(revealBag.shift()!);
+  }
+  reveal = revealBag.shift() ?? 'sumea';
   const range = (n: number) => [...Array(n).keys()];
   fixOrder = shuffle(range(config.puzzlePieces ** 2));
   mixOrder = shuffle(range(config.puzzlePieces ** 2));
