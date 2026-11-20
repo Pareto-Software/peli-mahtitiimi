@@ -415,10 +415,32 @@ function drawButtons(c: CanvasRenderingContext2D) {
     const right = phase === 'oikein' && ch.pic === current;
     const color = right ? '#3ccf6e' : ch.wrong ? '#d94a4a' : 'rgba(255,255,255,0.9)';
     roundRect(c, r.x, r.y, r.w, r.h, 18, color);
-    const textColor = right || ch.wrong ? '#fff' : '#223';
-    const label = `${i + 1}. ${ch.pic.name}`;
-    const size = Math.min(28, (r.w - 16) / (label.length * 0.6)); // pitkä nimi = pienempi teksti
-    text(c, label, r.x + r.w / 2, r.y + r.h / 2, { size, align: 'center', color: textColor });
+    buttonText(c, `${i + 1}. ${ch.pic.name}`, r, right || ch.wrong);
+  });
+}
+
+/** Text on a button: as big as fits. Long names go on two lines. light = white text (green/red button). */
+function buttonText(c: CanvasRenderingContext2D, label: string, r: { x: number; y: number; w: number; h: number }, light = false) {
+  const color = light ? '#fff' : '#223';
+  const widthAt = (s: string, size: number) => {
+    c.font = `bold ${size}px "Arial Rounded MT Bold", "Avenir Next", system-ui, sans-serif`;
+    return c.measureText(s).width;
+  };
+  // One line, if it fits big enough
+  let size = 30;
+  while (size > 18 && widthAt(label, size) > r.w - 20) size--;
+  if (widthAt(label, size) <= r.w - 20) {
+    text(c, label, r.x + r.w / 2, r.y + r.h / 2, { size, align: 'center', color, outline: light });
+    return;
+  }
+  // Two lines: split at the space nearest the middle
+  const spaces = [...label.matchAll(/ /g)].map((s) => s.index!);
+  const cut = spaces.reduce((a, b) => (Math.abs(b - label.length / 2) < Math.abs(a - label.length / 2) ? b : a), spaces[0] ?? label.length);
+  const lines = [label.slice(0, cut), label.slice(cut + 1)];
+  size = 26;
+  while (size > 12 && Math.max(...lines.map((l) => widthAt(l, size))) > r.w - 20) size--;
+  lines.forEach((l, k) => {
+    text(c, l, r.x + r.w / 2, r.y + r.h / 2 + (k - 0.5) * size * 1.15, { size, align: 'center', color, outline: light });
   });
 }
 
@@ -429,9 +451,7 @@ function drawNickPicker(c: CanvasRenderingContext2D) {
   nickChoices.forEach((n, i) => {
     const r = nickRect(i);
     roundRect(c, r.x, r.y, r.w, r.h, 18, 'rgba(255,255,255,0.9)');
-    const label = `${i + 1}. ${n}`;
-    const size = Math.min(26, (r.w - 16) / (label.length * 0.6));
-    text(c, label, r.x + r.w / 2, r.y + r.h / 2, { size, align: 'center', color: '#223' });
+    buttonText(c, `${i + 1}. ${n}`, r);
   });
 }
 
