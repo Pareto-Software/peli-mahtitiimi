@@ -2,6 +2,6 @@
   "title": "Tähtiseikkailu",
   "emoji": "🐱",
   "description": "Hypi tasoilla, kerää tähtiä ja löydä lippu!",
-  "controls": "Pelaaja 1: A D + W · Pelaaja 2: ← → + ↑",
+  "controls": "Pelaaja 1: A D + W tai napauta (reunat = juokse, keskelle = hyppää) · Pelaaja 2: ← → + ↑",
   "team": ""
 }

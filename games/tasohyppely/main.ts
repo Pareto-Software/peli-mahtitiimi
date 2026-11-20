@@ -2,7 +2,8 @@
 // the level maps in levels.ts. See README.md for which function does what.
 
 import { startGame, hitStop } from '@kit/loop';
-import { input, type PlayerNumber } from '@kit/input';
+import { input, type PlayerNumber, type PlayerInput } from '@kit/input';
+import { touch } from '@kit/touch';
 import { sfx } from '@kit/sound';
 import { drawEmoji } from '@kit/sprites';
 import { moveBody, overlap, distance, type TileWorld } from '@kit/physics';
@@ -113,6 +114,7 @@ function hasPower(p: Player, power: Power): boolean {
 // ---------------------------------------------------------------------------
 
 function loadLevel(index: number) {
+  tapRun = 0;
   levelIndex = index;
   const lines = levels[index].split('\n');
   while (lines.length && lines[0].trim() === '') lines.shift();
@@ -210,6 +212,7 @@ function respawn(p: Player, hurt: boolean) {
 
 function hurtPlayer(p: Player) {
   if (p.safeTime > 0 || godMode || levelDoneTime > 0) return;
+  if (p.n === 1) tapRun = 0; // stop after a bonk
   sfx('hit');
   fx.shake(10, 300);
   hitStop(80);
@@ -225,9 +228,38 @@ function hurtPlayer(p: Player) {
   respawn(p, true);
 }
 
+// ---- Puhelin: napauta ruudun vasenta tai oikeaa reunaa = juokse, keskeltä = hyppää ----
+
+let tapRun = 0; // -1 left, 0 stand, 1 right
+let tapJumpPressed = false;
+let tapJumpTime = 0; // seconds the tap jump still counts as "held" (a full jump)
+
+/** Taps: left third = run left, right third = run right, middle = jump.
+ *  Tapping the other side while running stops first. */
+function readTaps(dt: number) {
+  tapJumpTime = Math.max(0, tapJumpTime - dt);
+  tapJumpPressed = false;
+  for (const tap of touch.taps()) {
+    if (tap.x < W / 3) tapRun = tapRun > 0 ? 0 : -1;
+    else if (tap.x > (W * 2) / 3) tapRun = tapRun < 0 ? 0 : 1;
+    else { tapJumpPressed = true; tapJumpTime = 0.3; }
+  }
+}
+
+/** Player 1's keys and taps together. Keys win over taps. */
+function withTaps(inp: PlayerInput): PlayerInput {
+  if (inp.x !== 0) tapRun = 0;
+  return {
+    ...inp,
+    x: inp.x || tapRun,
+    jump: inp.jump || tapJumpTime > 0,
+    jumpPressed: inp.jumpPressed || tapJumpPressed,
+  };
+}
+
 function updatePlayer(p: Player, dt: number) {
   if (p.n === 2 && input.singlePlayer) { p.active = false; return; } // single-player mode
-  const inp = input.player(p.n);
+  const inp = p.n === 1 ? withTaps(input.player(1)) : input.player(p.n);
   if (!p.active) {
     if (inp.jumpPressed || inp.x !== 0) {
       // Player 2 joins next to player 1
@@ -517,11 +549,12 @@ function update(dt: number) {
   if (input.keyPressed('KeyR', { shift: true })) { restartLevel(); return; }
 
   if (gameOver || gameWon) {
-    if (input.player(1).jumpPressed || input.player(2).jumpPressed) restartGame();
+    if (input.player(1).jumpPressed || input.player(2).jumpPressed || touch.taps().length > 0) restartGame();
     particles.update(dt);
     return;
   }
 
+  readTaps(dt);
   for (const p of players) updatePlayer(p, dt);
   for (const t of things) updateThing(t, dt);
   updateShots(dt);
@@ -703,3 +736,21 @@ function drawHud(ctx: CanvasRenderingContext2D) {
 
 loadLevel(levelIndex);
 startGame({ width: W, height: H, update, draw, restartGame, restartLevel, players: config.players });
+
+// Puhelin: peli mahtuu koko ruutuun myös vaakatasossa (osoitepalkki ei peitä
+// reunoja), eikä ruutua voi vahingossa zoomata napauttamalla.
+function fitPhoneScreen() {
+  const vw = visualViewport?.width ?? innerWidth;
+  const vh = visualViewport?.height ?? innerHeight;
+  document.documentElement.style.touchAction = 'none';
+  document.body.style.touchAction = 'none';
+  document.body.style.height = `${vh}px`;
+  const canvas = document.querySelector('canvas');
+  if (!canvas) return;
+  const s = Math.min(vw / W, vh / H);
+  canvas.style.width = `${Math.floor(W * s)}px`;
+  canvas.style.height = `${Math.floor(H * s)}px`;
+}
+fitPhoneScreen();
+addEventListener('resize', fitPhoneScreen);
+visualViewport?.addEventListener('resize', fitPhoneScreen);

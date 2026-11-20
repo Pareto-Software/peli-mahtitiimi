@@ -34,6 +34,10 @@ Everything in this game lives in four files; don't create new files.
 | Sounds | `sfx('name')` in `main.ts`; names: jump coin hit powerup win lose boom click shoot bounce roar fart |
 | New behaviour (e.g. teleport, ice sliding) | `main.ts`: `updatePlayer`, `updateThing` (one `case` per `moves`), `touchThing` (one `case` per `touch`) |
 
+## Phones
+
+`readTaps` / `withTaps` in `main.ts`: tap the left or right third = run (tap the other side to stop), middle = jump. `fitPhoneScreen` fits the game to the visible screen.
+
 ## main.ts functions
 
 - `loadLevel` – reads a level map, places players and things
