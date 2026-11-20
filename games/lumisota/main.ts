@@ -38,6 +38,7 @@ let lives = config.lives;
 let tapDir = { x: 0, y: 0 };
 let tapThrow = false;
 let tapThrowFlash = 0; // seconds the ❄️ button stays bright
+let tapThrowHold = 0; // seconds a ❄️ tap counts as "held": with the 🧤 power-up it throws many
 /** Buttons show on touch screens (and after the first tap). */
 let showButtons = matchMedia('(pointer: coarse)').matches;
 
@@ -60,6 +61,7 @@ function inside(tap: { x: number; y: number }, r: { x: number; y: number; w?: nu
 function readTaps(dt: number) {
   tapThrow = false;
   tapThrowFlash = Math.max(0, tapThrowFlash - dt);
+  tapThrowHold = Math.max(0, tapThrowHold - dt);
   for (const tap of touch.taps()) {
     showButtons = true;
     for (const b of touchButtons) {
@@ -67,7 +69,7 @@ function readTaps(dt: number) {
       const same = tapDir.x === b.dx && tapDir.y === b.dy;
       tapDir = same ? { x: 0, y: 0 } : { x: b.dx, y: b.dy };
     }
-    if (inside(tap, throwButton)) { tapThrow = true; tapThrowFlash = 0.15; }
+    if (inside(tap, throwButton)) { tapThrow = true; tapThrowFlash = 0.15; tapThrowHold = 1; }
   }
 }
 
@@ -78,6 +80,7 @@ function withTaps(inp: PlayerInput): PlayerInput {
     ...inp,
     x: inp.x || tapDir.x,
     y: inp.y || tapDir.y,
+    action: inp.action || tapThrowHold > 0,
     actionPressed: inp.actionPressed || tapThrow,
   };
 }
