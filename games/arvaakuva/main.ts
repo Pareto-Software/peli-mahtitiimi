@@ -91,7 +91,9 @@ function nextPicture() {
   picAge = 0;
   penalty = 0;
   // Pick a random reveal way and random orders for it.
-  reveal = config.reveals[Math.floor(Math.random() * config.reveals.length)] ?? 'sumea';
+  // Ei samaa tapaa kahdesti peräkkäin (jos tapoja on enemmän kuin yksi).
+  const ways = config.reveals.length > 1 ? config.reveals.filter((r) => r !== reveal) : config.reveals;
+  reveal = ways[Math.floor(Math.random() * ways.length)] ?? 'sumea';
   const range = (n: number) => [...Array(n).keys()];
   fixOrder = shuffle(range(config.puzzlePieces ** 2));
   mixOrder = shuffle(range(config.puzzlePieces ** 2));
