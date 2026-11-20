@@ -11,7 +11,7 @@ export interface PictureDef {
 }
 
 /** Ways the picture is revealed. */
-export type RevealName = 'sumea' | 'palapeli' | 'viivat' | 'palat' | 'pisteet' | 'reunat';
+export type RevealName = 'sumea' | 'palapeli' | 'viivat' | 'palat' | 'pisteet' | 'reunat' | 'keskelta';
 
 export const config = {
   title: 'Arvaa kuva',
@@ -29,8 +29,9 @@ export const config = {
   /** Tavat, joilla kuva paljastuu (joka kuvalle arvotaan yksi):
    *  'sumea' = tarkentuu, 'palapeli' = palat menevät paikoilleen,
    *  'viivat' = viiva kerrallaan, 'palat' = pieni pala kerrallaan,
-   *  'pisteet' = piste kerrallaan, 'reunat' = reunoista keskustaa kohti. */
-  reveals: ['sumea', 'palapeli', 'viivat', 'palat', 'pisteet', 'reunat'] as RevealName[],
+   *  'pisteet' = piste kerrallaan, 'reunat' = reunoista keskustaa kohti,
+   *  'keskelta' = keskeltä reunoja kohti. */
+  reveals: ['sumea', 'palapeli', 'viivat', 'palat', 'pisteet', 'reunat', 'keskelta'] as RevealName[],
   /** Palapelin koko: näin monta palaa leveys- ja korkeussuunnassa. */
   puzzlePieces: 6,
   /** Viivoja vaaka- ja pystysuunnassa. */

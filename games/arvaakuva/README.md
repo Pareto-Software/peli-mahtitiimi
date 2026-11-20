@@ -19,7 +19,7 @@ Everything in this game lives in these files; don't create new files.
 | New pictures | `config.pictures` – `emoji` + Finnish `name` |
 | Slower / faster sharpening | `config.sharpenSeconds` |
 | Blurrier at the start | `config.startSharpness` (smaller = blurrier) |
-| Reveal ways (one picked per picture) | `config.reveals`: sumea, palapeli, viivat, palat, pisteet, reunat |
+| Reveal ways (one picked per picture) | `config.reveals`: sumea, palapeli, viivat, palat, pisteet, reunat, keskelta |
 | Puzzle / line / square sizes | `config.puzzlePieces`, `config.lines`, `config.smallPieces`, `config.dots` |
 | More / fewer pictures per round | `config.picturesPerRound` |
 | More answer buttons | `config.choices` (max 6 for number keys) |
@@ -37,7 +37,7 @@ Everything in this game lives in these files; don't create new files.
 - `sharpness` / `pointsNow` – how sharp the picture is and what a right answer is worth now
 - `answer` – right or wrong answer
 - `drawPicture` – picks the reveal way: `drawBlurry` (tiny canvas stretched big), `drawPuzzle`
-  (mixed pieces hop into place one at a time), `drawLines` (lines across and down), `drawSquares`, `drawDots` (round dots), `drawEdges` (edges first)
+  (mixed pieces hop into place one at a time), `drawLines` (lines across and down), `drawSquares`, `drawDots` (round dots), `drawEdges` (edges first), `drawFromMiddle` (a growing circle)
 - `nextPicture` picks the reveal way and the random orders (`fixOrder`, `mixOrder`, `lineOrder`, `squareOrder`)
 - `drawButtons` / `buttonRect` – the answer buttons
 - Taps come from `touch.taps()` (`@kit/touch`).

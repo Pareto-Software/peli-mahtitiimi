@@ -398,6 +398,24 @@ function drawEdges(c: CanvasRenderingContext2D) {
   c.fillRect(LEFT + (SIZE - hidden) / 2, TOP + (SIZE - hidden) / 2, hidden, hidden);
 }
 
+/** Keskeltä: a round hole in the middle grows until the whole picture shows. */
+function drawFromMiddle(c: CanvasRenderingContext2D) {
+  c.fillStyle = '#2b2d42';
+  c.fillRect(LEFT, TOP, SIZE, SIZE);
+  const r = SIZE * 0.72 * (0.08 + 0.92 * revealed()); // 0.72 = reaches the corners
+  c.save();
+  c.beginPath();
+  c.rect(LEFT, TOP, SIZE, SIZE);
+  c.clip();
+  c.beginPath();
+  c.arc(LEFT + SIZE / 2, TOP + SIZE / 2, r, 0, Math.PI * 2);
+  c.clip();
+  c.fillStyle = 'rgba(255,255,255,0.85)';
+  c.fillRect(LEFT, TOP, SIZE, SIZE);
+  drawPart(c, 0, 0, SIZE, SIZE);
+  c.restore();
+}
+
 /** Draws the picture in this picture's reveal way. */
 function drawPicture(c: CanvasRenderingContext2D) {
   drawSharp();
@@ -406,6 +424,7 @@ function drawPicture(c: CanvasRenderingContext2D) {
   else if (reveal === 'palat') drawSquares(c);
   else if (reveal === 'pisteet') drawDots(c);
   else if (reveal === 'reunat') drawEdges(c);
+  else if (reveal === 'keskelta') drawFromMiddle(c);
   else drawBlurry(c);
 }
 
