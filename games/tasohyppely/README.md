@@ -36,7 +36,7 @@ Everything in this game lives in four files; don't create new files.
 
 ## Phones
 
-`readTaps` / `withTaps` in `main.ts`: tap the left or right third = run (tap the other side to stop), middle = jump. `fitPhoneScreen` fits the game to the visible screen.
+`readTaps` / `withTaps` / `drawButtons` in `main.ts`: on-screen buttons (`buttons`): ◀ ▶ start running (tap again to stop), ⬆ jump. They show on touch screens. `fitPhoneScreen` fits the game to the visible screen.
 
 ## main.ts functions
 

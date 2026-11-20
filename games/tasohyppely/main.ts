@@ -5,7 +5,7 @@ import { startGame, hitStop } from '@kit/loop';
 import { input, type PlayerNumber, type PlayerInput } from '@kit/input';
 import { touch } from '@kit/touch';
 import { sfx } from '@kit/sound';
-import { drawEmoji } from '@kit/sprites';
+import { drawEmoji, roundRect } from '@kit/sprites';
 import { moveBody, overlap, distance, type TileWorld } from '@kit/physics';
 import { particles, fx } from '@kit/particles';
 import { text, hud, banner, bar } from '@kit/ui';
@@ -228,22 +228,48 @@ function hurtPlayer(p: Player) {
   respawn(p, true);
 }
 
-// ---- Puhelin: napauta ruudun vasenta tai oikeaa reunaa = juokse, keskeltä = hyppää ----
+// ---- Puhelin: ohjausnapit ruudulla: ◀ ▶ juokse, ⬆️ hyppää -------------------------
 
 let tapRun = 0; // -1 left, 0 stand, 1 right
 let tapJumpPressed = false;
 let tapJumpTime = 0; // seconds the tap jump still counts as "held" (a full jump)
+/** Buttons show on touch screens (and after the first tap). */
+let showButtons = matchMedia('(pointer: coarse)').matches;
 
-/** Taps: left third = run left, right third = run right, middle = jump.
- *  Tapping the other side while running stops first. */
+/** Where the phone buttons are on the screen. */
+const BTN = 130;
+const buttons = {
+  left: { x: 24, y: H - 290, w: BTN, h: BTN },
+  right: { x: 24 + BTN + 20, y: H - 290, w: BTN, h: BTN },
+  jump: { x: W - 24 - BTN * 1.2, y: H - 310, w: BTN * 1.2, h: BTN * 1.2 },
+};
+
+function inside(tap: { x: number; y: number }, r: { x: number; y: number; w: number; h: number }) {
+  return tap.x >= r.x && tap.x <= r.x + r.w && tap.y >= r.y && tap.y <= r.y + r.h;
+}
+
+/** ◀ / ▶ = start running that way (tap again to stop), ⬆️ = jump. */
 function readTaps(dt: number) {
   tapJumpTime = Math.max(0, tapJumpTime - dt);
   tapJumpPressed = false;
   for (const tap of touch.taps()) {
-    if (tap.x < W / 3) tapRun = tapRun > 0 ? 0 : -1;
-    else if (tap.x > (W * 2) / 3) tapRun = tapRun < 0 ? 0 : 1;
-    else { tapJumpPressed = true; tapJumpTime = 0.3; }
+    showButtons = true;
+    if (inside(tap, buttons.left)) tapRun = tapRun === -1 ? 0 : -1;
+    else if (inside(tap, buttons.right)) tapRun = tapRun === 1 ? 0 : 1;
+    else if (inside(tap, buttons.jump)) { tapJumpPressed = true; tapJumpTime = 0.3; }
   }
+}
+
+/** Draws the phone buttons; the one in use is brighter. */
+function drawButtons(ctx: CanvasRenderingContext2D) {
+  if (!showButtons) return;
+  const draw = (r: typeof buttons.left, label: string, on: boolean) => {
+    roundRect(ctx, r.x, r.y, r.w, r.h, 26, on ? 'rgba(255,217,61,0.75)' : 'rgba(255,255,255,0.35)');
+    text(ctx, label, r.x + r.w / 2, r.y + r.h / 2, { size: r.w * 0.45, align: 'center' });
+  };
+  draw(buttons.left, '◀', tapRun === -1);
+  draw(buttons.right, '▶', tapRun === 1);
+  draw(buttons.jump, '⬆', tapJumpTime > 0);
 }
 
 /** Player 1's keys and taps together. Keys win over taps. */
@@ -711,6 +737,7 @@ function drawPlayer(ctx: CanvasRenderingContext2D, p: Player) {
 }
 
 function drawHud(ctx: CanvasRenderingContext2D) {
+  drawButtons(ctx);
   hud(ctx, W, {
     score,
     lives: config.lives > 0 ? lives : undefined,
