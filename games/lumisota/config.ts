@@ -14,6 +14,8 @@ export interface PlayerDef {
 
 export interface EnemyDef {
   emoji: string;
+  /** Väri, jolla hahmo värjätään (esim. 0xff3333 = punainen). Pois = oma väri. */
+  tint?: number;
   /** Walking speed in tiles per second. */
   speed: number;
   /** Snowballs it takes to melt it. */
@@ -66,7 +68,7 @@ export const config = {
   safeTime: 1.5,
 
   // ---- 'yhdessä': waves of snowmen -------------------------------------
-  enemy: { emoji: '☃️', speed: 1.6, hp: 2, size: 1, score: 10, throwsEvery: 0 } as EnemyDef,
+  enemy: { emoji: '☃️', tint: 0xff3333, speed: 1.6, hp: 2, size: 1, score: 10, throwsEvery: 0 } as EnemyDef,
   /** A boss at the end of each arena (null = no boss). */
   boss: { emoji: '🧊', speed: 1.1, hp: 12, size: 2.2, score: 100, throwsEvery: 1.6 } as EnemyDef | null,
   /** How many waves per arena before the boss (or the next arena). */

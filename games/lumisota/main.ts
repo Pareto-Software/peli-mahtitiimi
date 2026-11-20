@@ -495,6 +495,7 @@ class Areena extends Phaser.Scene {
     const at = Phaser.Utils.Array.GetRandom(this.spawnPoints);
     const s = this.physics.add.sprite(at.x, at.y, (boss ? 'boss-' : 'enemy-') + def.emoji) as Sprite;
     fitBody(s, def.size, 0.6);
+    if (def.tint !== undefined) s.setTint(def.tint); // lumiukon väri
     s.setCollideWorldBounds(true);
     const e: Enemy = {
       sprite: s, def, hp: def.hp, boss, dirX: 0, dirY: 0, thinkTimer: 0,
@@ -552,7 +553,7 @@ class Areena extends Phaser.Scene {
     e.hp--;
     e.hitTime = 0.25;
     e.sprite.setTint(0x99ddff);
-    this.time.delayedCall(120, () => e.sprite.active && e.sprite.clearTint());
+    this.time.delayedCall(120, () => e.sprite.active && (e.def.tint !== undefined ? e.sprite.setTint(e.def.tint) : e.sprite.clearTint()));
     this.push(e.sprite, vx, vy, config.snowball.push * (e.boss ? 0.3 : 1));
     if (e.hp > 0) { sfx('hit', { pitch: 1.6, volume: 0.5 }); return; }
     // Melted!
