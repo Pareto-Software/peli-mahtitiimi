@@ -10,6 +10,9 @@ export interface PictureDef {
   name: string;
 }
 
+/** Ways the picture is revealed. */
+export type RevealName = 'sumea' | 'palapeli' | 'viivat' | 'palat';
+
 export const config = {
   title: 'Arvaa kuva',
   /** perus, talvi, avaruus, viidakko, laava or meri (see kit/themes.ts) */
@@ -23,6 +26,16 @@ export const config = {
   startSharpness: 3,
   /** Size of the picture in pixels (the screen is 960 × 540). */
   size: 260,
+  /** Tavat, joilla kuva paljastuu (joka kuvalle arvotaan yksi):
+   *  'sumea' = tarkentuu, 'palapeli' = palat menevät paikoilleen,
+   *  'viivat' = viiva kerrallaan, 'palat' = pieni pala kerrallaan. */
+  reveals: ['sumea', 'palapeli', 'viivat', 'palat'] as RevealName[],
+  /** Palapelin koko: näin monta palaa leveys- ja korkeussuunnassa. */
+  puzzlePieces: 4,
+  /** Viivoja vaaka- ja pystysuunnassa. */
+  lines: 12,
+  /** Pieniä paloja leveys- ja korkeussuunnassa. */
+  smallPieces: 8,
   /** How many answer buttons. */
   choices: 4,
 

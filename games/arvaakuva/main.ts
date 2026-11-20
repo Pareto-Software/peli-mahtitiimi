@@ -11,13 +11,15 @@ import { particles, fx } from '@kit/particles';
 import { text, hud, banner, bar } from '@kit/ui';
 import { themes } from '@kit/themes';
 import { storage } from '@kit/storage';
-import { config, type PictureDef } from './config';
+import { config, type PictureDef, type RevealName } from './config';
 
 const W = 960;
 const H = 540;
 const theme = themes[config.theme];
 const SIZE = config.size;
 const PIC_Y = 200; // where the middle of the picture is
+const LEFT = W / 2 - SIZE / 2; // top-left corner of the picture
+const TOP = PIC_Y - SIZE / 2;
 
 /** One answer button. */
 interface Choice {
@@ -38,6 +40,11 @@ let choices: Choice[] = [];
 let picNumber = 0;
 let picAge = 0; // seconds since this picture appeared
 let penalty = 0; // points lost to wrong answers on this picture
+let reveal: RevealName = 'sumea'; // how this picture is revealed
+let fixOrder: number[] = []; // palapeli: the order pieces go to their place
+let mixOrder: number[] = []; // palapeli: how the loose pieces are mixed
+let lineOrder: number[] = []; // viivat: the order lines appear
+let squareOrder: number[] = []; // palat: the order squares appear
 let phaseAge = 0;
 let popups: Popup[] = [];
 let score = 0;
@@ -47,9 +54,10 @@ let newRecord = false;
 // Small canvas: the picture is drawn tiny and stretched big = blurry!
 const blurCanvas = document.createElement('canvas');
 const blurCtx = blurCanvas.getContext('2d')!;
+const SHARP = SIZE * 2;
 const sharpCanvas = document.createElement('canvas');
-sharpCanvas.width = SIZE;
-sharpCanvas.height = SIZE;
+sharpCanvas.width = SHARP;
+sharpCanvas.height = SHARP;
 const sharpCtx = sharpCanvas.getContext('2d')!;
 
 function shuffle<T>(list: T[]): T[] {
@@ -82,6 +90,13 @@ function nextPicture() {
   picNumber++;
   picAge = 0;
   penalty = 0;
+  // Pick a random reveal way and random orders for it.
+  reveal = config.reveals[Math.floor(Math.random() * config.reveals.length)] ?? 'sumea';
+  const range = (n: number) => [...Array(n).keys()];
+  fixOrder = shuffle(range(config.puzzlePieces ** 2));
+  mixOrder = shuffle(range(config.puzzlePieces ** 2));
+  lineOrder = shuffle(range(config.lines * 2));
+  squareOrder = shuffle(range(config.smallPieces ** 2));
   phase = 'peli';
   // The right answer + random wrong ones, in a random order.
   const others = shuffle(config.pictures.filter((p) => p !== pic)).slice(0, config.choices - 1);
@@ -181,20 +196,110 @@ function update(dt: number) {
   NUMBER_KEYS.forEach((key, i) => { if (input.keyPressed(key)) answer(i); });
 }
 
-/** Draws the picture: tiny on a small canvas, then stretched big = blurry. */
-function drawBlurryPicture(c: CanvasRenderingContext2D) {
-  const sharp = phase === 'oikein' ? 1 : sharpness();
+/** How far the picture is revealed: 0 = start, 1 = all shown. */
+function revealed() {
+  return phase === 'oikein' ? 1 : sharpness();
+}
+
+/** How many of `total` parts are shown now (at least one, so there is a hint). */
+function partsShown(total: number) {
+  return Math.min(total, 1 + Math.floor(revealed() * total));
+}
+
+/** Draws the emoji big and sharp on its own canvas (2× for a crisp look). */
+function drawSharp() {
+  sharpCtx.clearRect(0, 0, SHARP, SHARP);
+  drawEmoji(sharpCtx, current.emoji, SHARP / 2, SHARP / 2, SHARP);
+}
+
+/** Copies a part of the picture (x, y, w, h inside the picture) to the screen at (toX, toY). */
+function drawPart(c: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, toX = x, toY = y) {
+  const s = SHARP / SIZE;
+  c.drawImage(sharpCanvas, x * s, y * s, w * s, h * s, LEFT + toX, TOP + toY, w, h);
+}
+
+/** Sumea: drawn tiny on a small canvas, then stretched big = blurry. */
+function drawBlurry(c: CanvasRenderingContext2D) {
+  const sharp = revealed();
   const pixels = Math.round(config.startSharpness + (SIZE - config.startSharpness) * sharp * sharp);
   blurCanvas.width = pixels;
   blurCanvas.height = pixels;
-  sharpCtx.clearRect(0, 0, SIZE, SIZE);
-  drawEmoji(sharpCtx, current.emoji, SIZE / 2, SIZE / 2, SIZE);
   blurCtx.clearRect(0, 0, pixels, pixels);
   blurCtx.drawImage(sharpCanvas, 0, 0, pixels, pixels);
   c.save();
   c.imageSmoothingEnabled = true;
-  c.drawImage(blurCanvas, W / 2 - SIZE / 2, PIC_Y - SIZE / 2, SIZE, SIZE);
+  c.drawImage(blurCanvas, LEFT, TOP, SIZE, SIZE);
   c.restore();
+}
+
+/** Palapeli: pieces in the wrong places hop to the right place one at a time. */
+function drawPuzzle(c: CanvasRenderingContext2D) {
+  const n = config.puzzlePieces;
+  const piece = SIZE / n;
+  const total = n * n;
+  const fixedCount = phase === 'oikein' ? total : Math.floor(revealed() * total);
+  const fixed = new Set(fixOrder.slice(0, fixedCount));
+  // The pieces not yet in place swap places in a ring, so none is in its own place.
+  const loose = mixOrder.filter((i) => !fixed.has(i));
+  const placeOf = new Map<number, number>();
+  for (const i of fixed) placeOf.set(i, i);
+  loose.forEach((i, k) => placeOf.set(i, loose[(k + 1) % loose.length]));
+
+  c.fillStyle = 'rgba(255,255,255,0.85)';
+  c.fillRect(LEFT, TOP, SIZE, SIZE);
+  for (let i = 0; i < total; i++) {
+    const to = placeOf.get(i)!;
+    const x = (i % n) * piece, y = Math.floor(i / n) * piece;
+    const tx = (to % n) * piece, ty = Math.floor(to / n) * piece;
+    drawPart(c, x, y, piece, piece, tx, ty);
+  }
+  // Lines between the pieces
+  c.strokeStyle = 'rgba(40,40,60,0.6)';
+  c.lineWidth = 2;
+  for (let k = 0; k <= n; k++) {
+    c.beginPath(); c.moveTo(LEFT + k * piece, TOP); c.lineTo(LEFT + k * piece, TOP + SIZE); c.stroke();
+    c.beginPath(); c.moveTo(LEFT, TOP + k * piece); c.lineTo(LEFT + SIZE, TOP + k * piece); c.stroke();
+  }
+}
+
+/** Viivat: one line at a time, across (vaaka) and down (pysty). */
+function drawLines(c: CanvasRenderingContext2D) {
+  const n = config.lines;
+  const step = SIZE / n;
+  c.fillStyle = '#2b2d42';
+  c.fillRect(LEFT, TOP, SIZE, SIZE);
+  // lineOrder: 0 … n-1 = across, n … 2n-1 = down
+  for (const line of lineOrder.slice(0, partsShown(2 * n))) {
+    const across = line < n;
+    const k = line % n;
+    const [x, y, w, h] = across ? [0, k * step, SIZE, step] : [k * step, 0, step, SIZE];
+    c.fillStyle = 'rgba(255,255,255,0.85)';
+    c.fillRect(LEFT + x, TOP + y, w, h);
+    drawPart(c, x, y, w, h);
+  }
+}
+
+/** Palat: one small square at a time. */
+function drawSquares(c: CanvasRenderingContext2D) {
+  const n = config.smallPieces;
+  const step = SIZE / n;
+  c.fillStyle = '#2b2d42';
+  c.fillRect(LEFT, TOP, SIZE, SIZE);
+  for (const i of squareOrder.slice(0, partsShown(n * n))) {
+    const x = (i % n) * step, y = Math.floor(i / n) * step;
+    c.fillStyle = 'rgba(255,255,255,0.85)';
+    c.fillRect(LEFT + x, TOP + y, step, step);
+    drawPart(c, x, y, step, step);
+  }
+}
+
+/** Draws the picture in this picture's reveal way. */
+function drawPicture(c: CanvasRenderingContext2D) {
+  drawSharp();
+  if (reveal === 'palapeli') drawPuzzle(c);
+  else if (reveal === 'viivat') drawLines(c);
+  else if (reveal === 'palat') drawSquares(c);
+  else drawBlurry(c);
 }
 
 function drawButtons(c: CanvasRenderingContext2D) {
@@ -220,7 +325,7 @@ function draw(c: CanvasRenderingContext2D) {
   if (phase === 'peli' || phase === 'oikein') {
     // A frame behind the picture
     roundRect(c, W / 2 - SIZE / 2 - 16, PIC_Y - SIZE / 2 - 16, SIZE + 32, SIZE + 32, 24, 'rgba(255,255,255,0.15)');
-    drawBlurryPicture(c);
+    drawPicture(c);
     drawButtons(c);
     if (phase === 'peli') bar(c, 16, 52, W - 32, 8, 1 - sharpness(), '#ffd93d');
   }

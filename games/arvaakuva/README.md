@@ -19,6 +19,8 @@ Everything in this game lives in these files; don't create new files.
 | New pictures | `config.pictures` – `emoji` + Finnish `name` |
 | Slower / faster sharpening | `config.sharpenSeconds` |
 | Blurrier at the start | `config.startSharpness` (smaller = blurrier) |
+| Reveal ways (one picked per picture) | `config.reveals`: sumea, palapeli, viivat, palat |
+| Puzzle / line / square sizes | `config.puzzlePieces`, `config.lines`, `config.smallPieces` |
 | More / fewer pictures per round | `config.picturesPerRound` |
 | More answer buttons | `config.choices` (max 6 for number keys) |
 | Points | `config.maxPoints`, `config.minPoints`, `config.wrongPenalty` |
@@ -29,7 +31,9 @@ Everything in this game lives in these files; don't create new files.
 - `startRound` / `nextPicture` / `endRound` – the round, a new picture with shuffled answers, the end and high score
 - `sharpness` / `pointsNow` – how sharp the picture is and what a right answer is worth now
 - `answer` – right or wrong answer
-- `drawBlurryPicture` – draws the emoji on a tiny canvas and stretches it big = blurry
+- `drawPicture` – picks the reveal way: `drawBlurry` (tiny canvas stretched big), `drawPuzzle`
+  (mixed pieces hop into place one at a time), `drawLines` (lines across and down), `drawSquares`
+- `nextPicture` picks the reveal way and the random orders (`fixOrder`, `mixOrder`, `lineOrder`, `squareOrder`)
 - `drawButtons` / `buttonRect` – the answer buttons
 - Taps come from `touch.taps()` (`@kit/touch`).
 
