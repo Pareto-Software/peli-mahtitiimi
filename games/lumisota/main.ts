@@ -656,7 +656,7 @@ class Areena extends Phaser.Scene {
     }
     if (picked === 0) {
       // Jatka: the next arena (after the last one: a new game from the start)
-      if (this.lastArena()) restartGame();
+      if (this.lastArena()) { storage.highScore(score, 'lumisota-best'); restartGame(); }
       else { levelIndex++; this.scene.restart(); }
     } else if (picked === 1) {
       // Lopeta: the end screen; throw again = a new game from the start
