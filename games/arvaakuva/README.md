@@ -22,7 +22,7 @@ Everything in this game lives in these files; don't create new files.
 | Reveal ways (one picked per picture) | `config.reveals`: sumea, palapeli, viivat, palat, pisteet, reunat, keskelta |
 | Puzzle / line / square sizes | `config.puzzlePieces`, `config.lines`, `config.smallPieces`, `config.dots` |
 | More / fewer pictures per round | `config.picturesPerRound` |
-| More answer buttons | `config.choices` (max 6 for number keys) |
+| More answer buttons | `config.choices` (max 6: number keys 1–6 and room on screen) |
 | Points | `config.maxPoints`, `config.minPoints`, `config.wrongPenalty` |
 | Nicknames (picked on the start screen, never typed) | `config.nickWords`, `config.nickAnimals` |
 | Longer / shorter score table | `config.scoreTableSize` |

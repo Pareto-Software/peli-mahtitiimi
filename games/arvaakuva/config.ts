@@ -41,7 +41,7 @@ export const config = {
   /** Pisteitä leveys- ja korkeussuunnassa (isompi = pienemmät pisteet). */
   dots: 18,
   /** How many answer buttons. */
-  choices: 4,
+  choices: 6,
 
   /** Points for a right answer straight away … and when the picture is totally sharp. */
   maxPoints: 100,

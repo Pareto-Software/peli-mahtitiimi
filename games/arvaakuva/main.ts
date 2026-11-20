@@ -187,11 +187,20 @@ function pointsNow() {
 function buttonRect(i: number) {
   const gap = 16;
   if (PORTRAIT) {
+    // Two per row; more answers = lower buttons so they all fit
+    const rowsNeeded = Math.ceil(choices.length / 2);
+    const h = Math.min(110, (H - 600 - 20) / rowsNeeded - 15);
     const w = (W - 32 - gap) / 2;
-    return { x: 16 + (i % 2) * (w + gap), y: 600 + Math.floor(i / 2) * 130, w, h: 110 };
+    return { x: 16 + (i % 2) * (w + gap), y: 600 + Math.floor(i / 2) * (h + 15), w, h };
   }
-  const w = (W - 32 - gap * (choices.length - 1)) / choices.length;
-  return { x: 16 + i * (w + gap), y: 400, w, h: 90 };
+  if (choices.length <= 4) {
+    const w = (W - 32 - gap * (choices.length - 1)) / choices.length;
+    return { x: 16 + i * (w + gap), y: 400, w, h: 90 };
+  }
+  // 5 or more answers: two rows of three under the picture
+  const cols = Math.ceil(choices.length / 2);
+  const w = (W - 32 - gap * (cols - 1)) / cols;
+  return { x: 16 + (i % cols) * (w + gap), y: 362 + Math.floor(i / cols) * 90, w, h: 78 };
 }
 
 function buttonAt(tap: Tap) {
