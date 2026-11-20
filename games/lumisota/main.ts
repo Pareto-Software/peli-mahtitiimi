@@ -144,6 +144,13 @@ class Areena extends Phaser.Scene {
   bossSpawned = false;
   arenaDone = 0;   // > 0 while celebrating a finished arena
   finished = false; // game won, game over or a 'vastakkain' round won
+  // Pokaalisivu between arenas: continue or stop
+  trophy = false;
+  trophyChoice = 0; // 0 = Jatka, 1 = Lopeta
+  trophyPrevX = 0;
+  trophyAge = 0; // seconds on the trophy page (a short wait so a fast throw doesn't skip it)
+  trophyButtons!: Phaser.GameObjects.Graphics;
+  trophyParts: Phaser.GameObjects.GameObject[] = []; // everything on the trophy page
 
   constructor() {
     super('areena');
@@ -160,6 +167,10 @@ class Areena extends Phaser.Scene {
     this.bossSpawned = false;
     this.arenaDone = 0;
     this.finished = false;
+    this.trophy = false;
+    this.trophyChoice = 0;
+    this.trophyParts = [];
+    this.physics.resume(); // paused on the trophy page
     this.mode = input.singlePlayer ? 'yhdessä' : config.mode; // one player can't fight themself
     dev.keep('lumisota-level', levelIndex);
 
@@ -347,6 +358,7 @@ class Areena extends Phaser.Scene {
 
     readTaps(dt);
     this.drawTouchButtons();
+    if (this.trophy) { this.updateTrophy(dt); return; }
     if (this.finished) {
       if (input.player(1).actionPressed || input.player(2).actionPressed || tapThrow) restartGame();
       return;
@@ -566,12 +578,95 @@ class Areena extends Phaser.Scene {
 
   nextArena() {
     if (levelIndex + 1 < levels.length) {
-      levelIndex++;
-      this.scene.restart();
+      this.showTrophy();
     } else {
       this.finished = true;
       const best = storage.highScore(score, 'lumisota-best');
       this.banner('Voitit pelin! 🏆', `Pisteet: ${score} · Ennätys: ${best} · Paina heittoa`, 0);
+    }
+  }
+
+  // ---- Pokaalisivu: Jatka vai Lopeta? --------------------------------------------
+
+  /** Where the two buttons are on the trophy page. */
+  trophyRect(i: number) {
+    return { x: W / 2 + (i === 0 ? -290 : 30), y: 360, w: 260, h: 90 };
+  }
+
+  /** Remembers a trophy page object so it can be removed later. */
+  keepTrophy<O extends Phaser.GameObjects.GameObject>(o: O): O {
+    this.trophyParts.push(o);
+    return o;
+  }
+
+  showTrophy() {
+    this.trophy = true;
+    this.trophyChoice = 0;
+    this.trophyPrevX = 0;
+    this.trophyAge = 0;
+    this.physics.pause();
+    this.tweens.killTweensOf([this.bannerText, this.bannerSub]);
+    this.bannerText.setAlpha(0);
+    this.bannerSub.setAlpha(0);
+    const depth = HUD + 10;
+    this.keepTrophy(this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.65).setDepth(depth));
+    const style = { fontFamily: FONT, color: '#ffffff', stroke: '#000000', strokeThickness: 6 };
+    this.keepTrophy(this.add.text(W / 2, 120, '🏆', { ...style, fontSize: '110px' }).setOrigin(0.5).setDepth(depth));
+    this.keepTrophy(this.add.text(W / 2, 235, `Areena ${levelIndex + 1} voitettu!`, { ...style, fontSize: '48px' }).setOrigin(0.5).setDepth(depth));
+    this.keepTrophy(this.add.text(W / 2, 295, `⭐ ${score} pistettä`, { ...style, fontSize: '30px', color: '#ffe9a8' }).setOrigin(0.5).setDepth(depth));
+    this.trophyButtons = this.keepTrophy(this.add.graphics().setDepth(depth));
+    ['▶ Jatka', '⏹ Lopeta'].forEach((label, i) => {
+      const r = this.trophyRect(i);
+      this.keepTrophy(this.add.text(r.x + r.w / 2, r.y + r.h / 2, label, { ...style, fontSize: '36px' }).setOrigin(0.5).setDepth(depth + 1));
+    });
+    this.keepTrophy(this.add.text(W / 2, 490, 'Valitse nuolilla ja paina heittoa – tai napauta', { ...style, fontSize: '20px', strokeThickness: 4 })
+      .setOrigin(0.5).setDepth(depth));
+    this.drawTrophyButtons();
+    sfx('powerup');
+  }
+
+  drawTrophyButtons() {
+    const g = this.trophyButtons;
+    g.clear();
+    for (const i of [0, 1]) {
+      const r = this.trophyRect(i);
+      const on = i === this.trophyChoice;
+      g.fillStyle(on ? 0xffd93d : 0xffffff, on ? 0.9 : 0.25);
+      g.fillRoundedRect(r.x, r.y, r.w, r.h, 22);
+    }
+  }
+
+  updateTrophy(dt: number) {
+    this.trophyAge += dt;
+    if (this.trophyAge < 0.8) return;
+    // Arrows / stick: choose. Throw: confirm. A tap on a button: choose it straight away.
+    const x = input.player(1).x || input.player(2).x;
+    if (x !== 0 && this.trophyPrevX === 0) {
+      this.trophyChoice = x < 0 ? 0 : 1;
+      this.drawTrophyButtons();
+      sfx('click');
+    }
+    this.trophyPrevX = x;
+    let picked = input.player(1).actionPressed || input.player(2).actionPressed ? this.trophyChoice : -1;
+    for (const tap of touch.taps()) {
+      for (const i of [0, 1]) {
+        const r = this.trophyRect(i);
+        if (tap.x >= r.x && tap.x <= r.x + r.w && tap.y >= r.y && tap.y <= r.y + r.h) picked = i;
+      }
+    }
+    if (picked === 0) {
+      // Jatka: the next arena
+      levelIndex++;
+      this.scene.restart();
+    } else if (picked === 1) {
+      // Lopeta: the end screen; throw again = a new game from the start
+      this.trophy = false;
+      this.finished = true;
+      const best = storage.highScore(score, 'lumisota-best');
+      for (const o of this.trophyParts) o.destroy();
+      this.trophyParts = [];
+      this.banner('Hyvä peli! 🏆', `Pisteet: ${score} · Ennätys: ${best} · Paina heittoa: uusi peli`, 0);
+      sfx('win');
     }
   }
 

@@ -41,6 +41,7 @@ Everything in this game lives in these files; don't create new files.
 - `throwBall(x, y, dx, dy, owner)` – owner 1 or 2 = a player, 0 = an enemy
 - `ballHitsPlayer` / `ballHitsEnemy` / `hurtPlayer` / `push` – hits, knock-back, melting
 - `updateWaves` – waves, the boss, arena won → `nextArena`
+- `showTrophy` / `updateTrophy` – the trophy page between arenas: ▶ Jatka (next arena) or ⏹ Lopeta (end screen)
 - `spawnEnemy` / `updateEnemy` – snowmen walk towards the nearest player and around walls
 - `drawHud` / `banner` – score line, boss health bar, big messages
 - `restartGame` / `restartLevel` – used by the ⚙️ menu
