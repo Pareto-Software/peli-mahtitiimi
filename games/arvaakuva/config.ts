@@ -19,7 +19,7 @@ export const config = {
   theme: 'avaruus' as ThemeName,
 
   /** How many pictures in one round. */
-  picturesPerRound: 10,
+  picturesPerRound: 15,
   /** Seconds it takes for a picture to become totally sharp. */
   sharpenSeconds: 14,
   /** How blurry it is at the start: smaller = blurrier (pixels across the picture). */

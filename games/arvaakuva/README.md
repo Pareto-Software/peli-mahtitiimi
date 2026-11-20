@@ -2,7 +2,7 @@
 
 "Arvaa kuva": a blurry picture (an emoji) slowly gets sharper. Tap the right
 name from the answer buttons – the faster you guess, the more points. A wrong
-answer turns the button red and takes points away. One round = 10 pictures.
+answer turns the button red and takes points away. One round = 15 pictures.
 Works on touch screens, with a mouse, and with number keys 1–4.
 Everything in this game lives in these files; don't create new files.
 
