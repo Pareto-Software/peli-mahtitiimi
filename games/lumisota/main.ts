@@ -4,7 +4,8 @@
 
 import Phaser from 'phaser';
 import { startPhaserGame, emojiTexture, circleTexture } from '@kit/phaser';
-import { input, type PlayerNumber } from '@kit/input';
+import { input, type PlayerNumber, type PlayerInput } from '@kit/input';
+import { touch } from '@kit/touch';
 import { sfx } from '@kit/sound';
 import { themes } from '@kit/themes';
 import { dev } from '@kit/dev';
@@ -28,6 +29,58 @@ const color = (hex: string) => parseInt(hex.replace('#', ''), 16);
 let levelIndex = Math.min(dev.recall('lumisota-level', 0), levels.length - 1);
 let score = dev.recall('lumisota-score', 0);
 let lives = config.lives;
+
+// ---------------------------------------------------------------------------
+// Puhelin: ohjausnapit ruudulla. Nuolet = kävele (sama nuoli uudestaan = seis),
+// ❄️ = heitä lumipallo.
+// ---------------------------------------------------------------------------
+
+let tapDir = { x: 0, y: 0 };
+let tapThrow = false;
+let tapThrowFlash = 0; // seconds the ❄️ button stays bright
+/** Buttons show on touch screens (and after the first tap). */
+let showButtons = matchMedia('(pointer: coarse)').matches;
+
+const BTN = 88;
+const PAD = { x: 150, y: 300 }; // middle of the arrow cross
+const touchButtons = [
+  { dx: 0, dy: -1, label: '▲', x: PAD.x - BTN / 2, y: PAD.y - BTN * 1.5 - 6 },
+  { dx: -1, dy: 0, label: '◀', x: PAD.x - BTN * 1.5 - 6, y: PAD.y - BTN / 2 },
+  { dx: 1, dy: 0, label: '▶', x: PAD.x + BTN / 2 + 6, y: PAD.y - BTN / 2 },
+  { dx: 0, dy: 1, label: '▼', x: PAD.x - BTN / 2, y: PAD.y + BTN / 2 + 6 },
+];
+const throwButton = { x: W - 40 - BTN * 1.6, y: PAD.y - BTN * 0.8, w: BTN * 1.6, h: BTN * 1.6 };
+
+function inside(tap: { x: number; y: number }, r: { x: number; y: number; w?: number; h?: number }) {
+  const w = r.w ?? BTN, h = r.h ?? BTN;
+  return tap.x >= r.x && tap.x <= r.x + w && tap.y >= r.y && tap.y <= r.y + h;
+}
+
+/** Reads this frame's taps: an arrow starts walking (same arrow again = stop), ❄️ throws. */
+function readTaps(dt: number) {
+  tapThrow = false;
+  tapThrowFlash = Math.max(0, tapThrowFlash - dt);
+  for (const tap of touch.taps()) {
+    showButtons = true;
+    for (const b of touchButtons) {
+      if (!inside(tap, b)) continue;
+      const same = tapDir.x === b.dx && tapDir.y === b.dy;
+      tapDir = same ? { x: 0, y: 0 } : { x: b.dx, y: b.dy };
+    }
+    if (inside(tap, throwButton)) { tapThrow = true; tapThrowFlash = 0.15; }
+  }
+}
+
+/** Player 1's keys and taps together. Keys win over taps. */
+function withTaps(inp: PlayerInput): PlayerInput {
+  if (inp.x !== 0 || inp.y !== 0) tapDir = { x: 0, y: 0 };
+  return {
+    ...inp,
+    x: inp.x || tapDir.x,
+    y: inp.y || tapDir.y,
+    actionPressed: inp.actionPressed || tapThrow,
+  };
+}
 let hits: [number, number] = [0, 0]; // 'vastakkain': hits by player 1 and player 2
 let showTitle = true;
 let godMode = false;
@@ -81,6 +134,8 @@ class Areena extends Phaser.Scene {
   bannerText!: Phaser.GameObjects.Text;
   bannerSub!: Phaser.GameObjects.Text;
   bossBar!: Phaser.GameObjects.Graphics;
+  padGraphics!: Phaser.GameObjects.Graphics;
+  padLabels: Phaser.GameObjects.Text[] = [];
   mode: 'yhdessä' | 'vastakkain' = 'yhdessä';
   wave = 0;
   toSpawn = 0;
@@ -125,6 +180,8 @@ class Areena extends Phaser.Scene {
 
     this.addColliders();
     this.makeHud();
+    this.makeTouchButtons();
+    tapDir = { x: 0, y: 0 };
     if (showTitle && levelIndex === 0) {
       const help = input.singlePlayer
         ? 'Liiku: W A S D tai nuolet  ·  Heitä: F tai Enter'
@@ -288,8 +345,10 @@ class Areena extends Phaser.Scene {
     if (input.keyPressed('KeyR', { shift: true })) { restartLevel(); return; }
     if (this.mode === 'vastakkain' && input.singlePlayer) { this.scene.restart(); return; }
 
+    readTaps(dt);
+    this.drawTouchButtons();
     if (this.finished) {
-      if (input.player(1).actionPressed || input.player(2).actionPressed) restartGame();
+      if (input.player(1).actionPressed || input.player(2).actionPressed || tapThrow) restartGame();
       return;
     }
 
@@ -303,8 +362,33 @@ class Areena extends Phaser.Scene {
 
   // ---- Players ---------------------------------------------------------------
 
+  /** The phone buttons: drawn on top of everything, redrawn every frame. */
+  makeTouchButtons() {
+    this.padGraphics = this.add.graphics().setDepth(HUD + 5);
+    const style = { fontFamily: FONT, fontSize: '40px', color: '#ffffff', stroke: '#000000', strokeThickness: 5 };
+    this.padLabels = [
+      ...touchButtons.map((b) => this.add.text(b.x + BTN / 2, b.y + BTN / 2, b.label, style)),
+      this.add.text(throwButton.x + throwButton.w / 2, throwButton.y + throwButton.h / 2, '❄️', { ...style, fontSize: '64px' }),
+    ];
+    for (const t of this.padLabels) t.setOrigin(0.5).setDepth(HUD + 6);
+  }
+
+  drawTouchButtons() {
+    const g = this.padGraphics;
+    g.clear();
+    for (const t of this.padLabels) t.setVisible(showButtons);
+    if (!showButtons) return;
+    for (const b of touchButtons) {
+      const on = tapDir.x === b.dx && tapDir.y === b.dy;
+      g.fillStyle(on ? 0xffd93d : 0xffffff, on ? 0.75 : 0.3);
+      g.fillRoundedRect(b.x, b.y, BTN, BTN, 20);
+    }
+    g.fillStyle(tapThrowFlash > 0 ? 0xffd93d : 0xffffff, tapThrowFlash > 0 ? 0.75 : 0.3);
+    g.fillRoundedRect(throwButton.x, throwButton.y, throwButton.w, throwButton.h, 30);
+  }
+
   updatePlayer(p: Player, dt: number) {
-    const inp = input.player(p.n);
+    const inp = p.n === 1 ? withTaps(input.player(1)) : input.player(p.n);
     if (!p.active) {
       if (p.n === 2 && !input.singlePlayer && (inp.actionPressed || inp.x !== 0 || inp.y !== 0)) {
         const other = this.players[0].sprite;
@@ -641,3 +725,23 @@ const game = startPhaserGame(
   },
   { restartGame, restartLevel, players: config.players },
 );
+
+// Puhelin: napautukset kitin kautta, ja peli mahtuu koko ruutuun myös
+// vaakatasossa (osoitepalkki ei peitä reunoja) eikä ruutua voi vahingossa zoomata.
+game.events.on(Phaser.Core.Events.PRE_STEP, () => touch.beginFrame());
+game.events.on(Phaser.Core.Events.POST_STEP, () => touch.endFrame());
+game.events.once(Phaser.Core.Events.READY, () => {
+  touch.attach(game.canvas, W, H);
+  fitPhoneScreen();
+});
+
+function fitPhoneScreen() {
+  const vh = visualViewport?.height ?? innerHeight;
+  document.documentElement.style.touchAction = 'none';
+  document.body.style.touchAction = 'none';
+  document.body.style.height = `${vh}px`;
+  document.body.style.display = 'block'; // Phaser centres the game itself
+  game.scale.refresh();
+}
+addEventListener('resize', fitPhoneScreen);
+visualViewport?.addEventListener('resize', fitPhoneScreen);

@@ -45,6 +45,10 @@ Everything in this game lives in these files; don't create new files.
 - `drawHud` / `banner` – score line, boss health bar, big messages
 - `restartGame` / `restartLevel` – used by the ⚙️ menu
 
+## Phones
+
+`readTaps` / `withTaps` + `makeTouchButtons` / `drawTouchButtons` in `main.ts`: arrow buttons start walking (same arrow again = stop), ❄️ throws. Taps come from `touch` (`@kit/touch`), attached to the Phaser canvas at the end of `main.ts`; `fitPhoneScreen` fits the game to the visible screen.
+
 ## Phaser and the kit
 
 - Use Phaser 4.2.1 APIs only: `this.physics.add.sprite`, groups, `collider`/`overlap`,
